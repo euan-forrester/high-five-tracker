@@ -3,10 +3,16 @@
 import requests
 import json
 import re
+import spacy
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-NAMES_OF_INTEREST = [ 'Katie', 'Toews' ]
+HIGH_FIVE_URL = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&p=1000&o=HighFiveDate,Descending&site=null"
+
+NAMES_OF_INTEREST = [ 'Katie', 'Kathryn', 'Toews' ]
+
+# Load English tokenizer, tagger, parser and NER
+nlp = spacy.load("en_core_web_sm")
 
 def sanitize_string(s):
   if s is None:
@@ -22,7 +28,7 @@ def parse_date(s):
 
   return datetime.strptime(s, '%b %d, %Y') # Example date is 'Apr 27, 2023'
 
-def parse_response_item(i):
+def parse_high_five(i):
   soup = BeautifulSoup(i['Html'], 'html.parser')  
 
   card_div = soup.find('div', {'class': 'highfive-card'})
@@ -54,16 +60,41 @@ def high_five_has_name_of_interest(high_five):
 
   return False
 
-url = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&p=1000&o=HighFiveDate,Descending&site=null"
+def get_all_people(high_five):
+  document = nlp(high_five['message'])
 
-response = requests.get(url)
+  person_entities = list(filter(lambda entity:entity.label_ == 'PERSON', document.ents))
+  person_names = list(map(lambda entity:entity.text, person_entities))
+
+  person_names_deduplicated = list(set(person_names))
+
+  return person_names_deduplicated
+
+response = requests.get(HIGH_FIVE_URL)
 
 response_data = json.loads(response.text)
 
 response_count = response_data['Count']
 
-all_high_fives = list(map(parse_response_item, response_data['Results']))
+all_high_fives = list(map(parse_high_five, response_data['Results']))
+
+person_counts = {}
+
+for high_five in all_high_fives:
+  new_people = get_all_people(high_five)
+  for person in new_people:
+    if person not in person_counts:
+      person_counts[person] = 1
+    else:
+      person_counts[person] += 1
+
+sorted_person_counts = dict(sorted(person_counts.items(), key=lambda x: x[1], reverse=True))
+
+for person_name, count in sorted_person_counts.items():
+  print(f"Name: {person_name}. Total high fives: {count}")
 
 interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
 
-print(interesting_high_fives)
+print(f"Found {len(interesting_high_fives)} interesting high fives")
+
+# print(interesting_high_fives)
