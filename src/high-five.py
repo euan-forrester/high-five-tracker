@@ -94,16 +94,30 @@ person_counts = {}
 
 for high_five in all_high_fives:
   new_people = get_all_people(high_five)
+
+  if len(new_people) == 0:
+    continue
+
+  community = high_five['community']
+
+  if community not in person_counts:
+    person_counts[community] = {}
+
   for person in new_people:
-    if person not in person_counts:
-      person_counts[person] = 1
+    if person not in person_counts[community]:
+      person_counts[community][person] = 1
     else:
-      person_counts[person] += 1
+      person_counts[community][person] += 1
 
-sorted_person_counts = dict(sorted(person_counts.items(), key=lambda x: x[1], reverse=True))
+sorted_person_counts = {}
 
-for person_name, count in sorted_person_counts.items():
-  print(f"Name: {person_name}. Total high fives: {count}")
+for community in person_counts.keys():
+  sorted_person_counts[community] = dict(sorted(person_counts[community].items(), key=lambda x: x[1], reverse=True))
+
+for community, person_counts in sorted_person_counts.items():
+  for person_name, count in person_counts.items():
+    print("\n")
+    print(f"Name: {person_name}, Community: {community} Total high fives: {count}")
 
 interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
 
@@ -111,5 +125,3 @@ print(f"Found {len(interesting_high_fives)} interesting high fives")
 for high_five in interesting_high_fives:
   print("\n\n")
   print_high_five(high_five)
-
-# print(interesting_high_fives)
