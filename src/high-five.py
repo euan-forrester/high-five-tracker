@@ -10,6 +10,10 @@ from datetime import datetime
 HIGH_FIVE_URL = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&p=1000&o=HighFiveDate,Descending&site=null"
 
 NAMES_OF_INTEREST = [ 'Katie', 'Kathryn', 'Toews' ]
+COMMUNITIES_OF_INTEREST = [ 'Port Moody', 'New Westminster' ]
+
+NAMES_OF_INTEREST_LOWERCASE = [s.lower() for s in NAMES_OF_INTEREST]
+COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
 
 # Load English tokenizer, tagger, parser and NER
 nlp = spacy.load("en_core_web_sm")
@@ -48,15 +52,17 @@ def parse_high_five(i):
   return {
     'id': i['Id'],
     'date': parse_date(sanitize_string(date_text)),
-    'first_name': sanitize_string(firstname_text),
+    'name': sanitize_string(firstname_text),
     'community': sanitize_string(community_text),
     'message': sanitize_string(message_text)
   }
 
 def high_five_has_name_of_interest(high_five):
-  for name in NAMES_OF_INTEREST:
-    if name.lower() in high_five['message'].lower():
-      return True
+  for name in NAMES_OF_INTEREST_LOWERCASE:
+    if name in high_five['message'].lower():
+      if (high_five['community'] is None) or (high_five['community'].lower() in COMMUNITIES_OF_INTEREST_LOWERCASE):
+        print(f"Found {name} in {high_five['community']}")
+        return True
 
   return False
 
@@ -69,6 +75,12 @@ def get_all_people(high_five):
   person_names_deduplicated = list(set(person_names))
 
   return person_names_deduplicated
+
+def print_high_five(high_five):
+  print(f"Date: {high_five['date'].strftime('%b %-d, %Y')}") if high_five['date'] is not None else None
+  print(f"From: {high_five['name']}") if high_five['name'] is not None else None
+  print(f"Community: {high_five['community']}") if high_five['community'] is not None else None
+  print(f"Message: {high_five['message']}")
 
 response = requests.get(HIGH_FIVE_URL)
 
@@ -96,5 +108,8 @@ for person_name, count in sorted_person_counts.items():
 interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
 
 print(f"Found {len(interesting_high_fives)} interesting high fives")
+for high_five in interesting_high_fives:
+  print("\n\n")
+  print_high_five(high_five)
 
 # print(interesting_high_fives)
