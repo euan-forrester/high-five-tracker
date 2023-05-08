@@ -7,7 +7,9 @@ import spacy
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-HIGH_FIVE_URL = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&p=1000&o=HighFiveDate,Descending&site=null"
+# p is the count
+# e is the offset
+HIGH_FIVE_URL = "https://www.fraserhealth.ca//sxa/search/results/?l=en&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&p=10&e=10&o=HighFiveDate,Descending&site=null"
 
 NAMES_OF_INTEREST = [ 'Katie', 'Kathryn', 'Toews' ]
 COMMUNITIES_OF_INTEREST = [ 'Port Moody', 'New Westminster' ]
@@ -37,16 +39,16 @@ def parse_high_five(i):
 
   card_div = soup.find('div', {'class': 'highfive-card'})
 
-  community_div = card_div.find('span', {'class': 'field-communityname'})
+  community_div = card_div.find('span', {'class': 'field-communityname'}) if card_div is not None else None
   community_text = community_div.text if community_div is not None else None
 
-  message_div = card_div.find('div', {'class': 'field-message'})
+  message_div = card_div.find('div', {'class': 'field-message'}) if card_div is not None else None
   message_text = message_div.text if message_div is not None else None
 
-  date_div = card_div.find('div', {'class': 'field-highfivedate'})
+  date_div = card_div.find('div', {'class': 'field-highfivedate'}) if card_div is not None else None
   date_text = date_div.text if date_div is not None else None
 
-  firstname_div = card_div.find('div', {'class': 'field-firstname'})
+  firstname_div = card_div.find('div', {'class': 'field-firstname'}) if card_div is not None else None
   firstname_text = firstname_div.text if firstname_div is not None else None
 
   return {
@@ -89,6 +91,7 @@ response_data = json.loads(response.text)
 response_count = response_data['Count']
 
 all_high_fives = list(map(parse_high_five, response_data['Results']))
+all_high_fives = list(filter(lambda high_five:high_five['message'] is not None, all_high_fives))
 
 person_counts = {}
 
@@ -122,6 +125,6 @@ for community, person_counts in sorted_person_counts.items():
 interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
 
 print(f"Found {len(interesting_high_fives)} interesting high fives")
-for high_five in interesting_high_fives:
+for high_five in all_high_fives:
   print("\n\n")
   print_high_five(high_five)
