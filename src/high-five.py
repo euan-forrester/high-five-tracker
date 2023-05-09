@@ -68,7 +68,7 @@ def high_five_has_name_of_interest(high_five):
 
   return False
 
-def get_all_people(high_five):
+def get_all_people_from_high_five(high_five):
   document = nlp(high_five['message'])
 
   person_entities = list(filter(lambda entity:entity.label_ == 'PERSON', document.ents))
@@ -84,45 +84,59 @@ def print_high_five(high_five):
   print(f"Community: {high_five['community']}") if high_five['community'] is not None else None
   print(f"Message: {high_five['message']}")
 
-response = requests.get(HIGH_FIVE_URL)
+def get_all_high_fives():
+  response = requests.get(HIGH_FIVE_URL)
 
-response_data = json.loads(response.text)
+  response_data = json.loads(response.text)
 
-response_count = response_data['Count']
+  response_count = response_data['Count']
 
-all_high_fives = list(map(parse_high_five, response_data['Results']))
-all_high_fives = list(filter(lambda high_five:high_five['message'] is not None, all_high_fives))
+  all_high_fives = list(map(parse_high_five, response_data['Results']))
+  all_high_fives = list(filter(lambda high_five:high_five['message'] is not None, all_high_fives))
 
-person_counts = {}
+  return all_high_fives
 
-for high_five in all_high_fives:
-  new_people = get_all_people(high_five)
+def get_person_in_community_counts(high_fives):
+  person_counts = {}
 
-  if len(new_people) == 0:
-    continue
+  for high_five in all_high_fives:
+    new_people = get_all_people_from_high_five(high_five)
 
-  community = high_five['community']
+    if len(new_people) == 0:
+      continue
 
-  if community not in person_counts:
-    person_counts[community] = {}
+    community = high_five['community']
 
-  for person in new_people:
-    if person not in person_counts[community]:
-      person_counts[community][person] = 1
-    else:
-      person_counts[community][person] += 1
+    if community not in person_counts:
+      person_counts[community] = {}
 
-sorted_person_counts = {}
+    for person in new_people:
+      if person not in person_counts[community]:
+        person_counts[community][person] = 1
+      else:
+        person_counts[community][person] += 1
+  
+  return person_counts
 
-for community in person_counts.keys():
-  sorted_person_counts[community] = dict(sorted(person_counts[community].items(), key=lambda x: x[1], reverse=True))
+def sort_person_in_community_counts(person_counts):
+  sorted_person_counts = {}
+
+  for community in person_counts.keys():
+    sorted_person_counts[community] = dict(sorted(person_counts[community].items(), key=lambda x: x[1], reverse=True))    
+
+  return sorted_person_counts
+
+all_high_fives = get_all_high_fives()
+
+interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
+
+person_counts = get_person_in_community_counts(all_high_fives)
+sorted_person_counts = sort_person_in_community_counts(person_counts)
 
 for community, person_counts in sorted_person_counts.items():
   for person_name, count in person_counts.items():
     print("\n")
     print(f"Name: {person_name}, Community: {community} Total high fives: {count}")
-
-interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
 
 print(f"Found {len(interesting_high_fives)} interesting high fives")
 for high_five in all_high_fives:
