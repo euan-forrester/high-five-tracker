@@ -1,16 +1,33 @@
 #!/usr/bin/env python3
 
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+import logging
+import sys
 import json
 import re
 import spacy
 from bs4 import BeautifulSoup
 from datetime import datetime
 
+if logging.getLogger().hasHandlers():
+  # The Lambda environment pre-configures a handler logging to stderr. If a handler is already configured,
+  # `.basicConfig` does not execute. Thus we set the level directly.
+  logging.getLogger().setLevel(logging.INFO)
+else:
+  logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger()
+
 # p is the count
 # e is the offset
 HIGH_FIVE_BASE_URL = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&o=HighFiveDate,Descending&site=null"
 BATCH_SIZE = 1000
+
+RETRIES = 3
+BACKOFF_FACTOR = 0.5
 
 NAMES_OF_INTEREST = [ 'Katie', 'Kathryn', 'Toews' ]
 COMMUNITIES_OF_INTEREST = [ 'Port Moody', 'New Westminster' ]
@@ -86,6 +103,12 @@ def print_high_five(high_five):
   print(f"Message: {high_five['message']}")
 
 def get_all_high_fives():
+  retries = Retry(total = RETRIES, backoff_factor = BACKOFF_FACTOR)
+  adapter = HTTPAdapter(max_retries = retries)
+
+  session = requests.Session()
+  session.mount("https://", adapter)
+
   # The pagination of this endpoint is a bit strange
   #
   # We can't just keep going until we get no results, because there is a point near the end of the results where we can get an
@@ -104,7 +127,11 @@ def get_all_high_fives():
   while True:
     url = HIGH_FIVE_BASE_URL + f"&p={BATCH_SIZE}&e={current_offset}"
 
-    response = requests.get(url)
+    response = session.get(url)
+
+    if response.status_code != 200:
+      logger.error(f"Received status code {response.status_code} after {RETRIES} attempts from URL '{url}'")
+      sys.exit(-1)
 
     response_data = json.loads(response.text)
 
@@ -156,19 +183,18 @@ all_high_fives = get_all_high_fives()
 
 interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
 
+'''
 person_counts = get_person_in_community_counts(all_high_fives)
 sorted_person_counts = sort_person_in_community_counts(person_counts)
 
-'''
 for community, person_counts in sorted_person_counts.items():
   print("\n")
   for person_name, count in person_counts.items():
     print(f"Name: {person_name}, Community: {community} Total high fives: {count}")
 '''
 
-'''
 print(f"Found {len(interesting_high_fives)} interesting high fives")
 for high_five in interesting_high_fives:
   print("\n\n")
   print_high_five(high_five)
-'''
+
