@@ -9,7 +9,8 @@ from datetime import datetime
 
 # p is the count
 # e is the offset
-HIGH_FIVE_URL = "https://www.fraserhealth.ca//sxa/search/results/?l=en&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&p=10&e=10&o=HighFiveDate,Descending&site=null"
+HIGH_FIVE_BASE_URL = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&o=HighFiveDate,Descending&site=null"
+BATCH_SIZE = 1000
 
 NAMES_OF_INTEREST = [ 'Katie', 'Kathryn', 'Toews' ]
 COMMUNITIES_OF_INTEREST = [ 'Port Moody', 'New Westminster' ]
@@ -85,14 +86,39 @@ def print_high_five(high_five):
   print(f"Message: {high_five['message']}")
 
 def get_all_high_fives():
-  response = requests.get(HIGH_FIVE_URL)
+  # The pagination of this endpoint is a bit strange
+  #
+  # We can't just keep going until we get no results, because there is a point near the end of the results where we can get an
+  # empty response, but if we keep going we will eventially find more.
+  #
+  # There's a Count value in the object returned, and it seems to fluctuate between 2 or more values as we page through the
+  # results. My guess is that it's fluctuating between the actual number of real records, and the largest ID of a record -- since there's the gap mentioned above.
+  #
+  # So, we're going to keep track of the largest count that we see, and keep asking for results until we hit it
 
-  response_data = json.loads(response.text)
+  current_offset = 0
+  total_high_fives = 0
 
-  response_count = response_data['Count']
+  all_high_fives = []
 
-  all_high_fives = list(map(parse_high_five, response_data['Results']))
-  all_high_fives = list(filter(lambda high_five:high_five['message'] is not None, all_high_fives))
+  while True:
+    url = HIGH_FIVE_BASE_URL + f"&p={BATCH_SIZE}&e={current_offset}"
+
+    response = requests.get(url)
+
+    response_data = json.loads(response.text)
+
+    total_high_fives = max(total_high_fives, response_data['Count'])
+
+    current_offset += BATCH_SIZE
+
+    high_fives_batch = list(map(parse_high_five, response_data['Results']))
+    high_fives_batch = list(filter(lambda high_five:high_five['message'] is not None, high_fives_batch))
+
+    all_high_fives += high_fives_batch
+
+    if current_offset >= total_high_fives:
+      break
 
   return all_high_fives
 
@@ -133,12 +159,16 @@ interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fi
 person_counts = get_person_in_community_counts(all_high_fives)
 sorted_person_counts = sort_person_in_community_counts(person_counts)
 
+'''
 for community, person_counts in sorted_person_counts.items():
+  print("\n")
   for person_name, count in person_counts.items():
-    print("\n")
     print(f"Name: {person_name}, Community: {community} Total high fives: {count}")
+'''
 
+'''
 print(f"Found {len(interesting_high_fives)} interesting high fives")
-for high_five in all_high_fives:
+for high_five in interesting_high_fives:
   print("\n\n")
   print_high_five(high_five)
+'''
