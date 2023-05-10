@@ -12,6 +12,12 @@ import spacy
 from bs4 import BeautifulSoup
 from datetime import datetime
 
+from confighelper import ConfigHelper
+
+#
+# Setup logging
+#
+
 if logging.getLogger().hasHandlers():
   # The Lambda environment pre-configures a handler logging to stderr. If a handler is already configured,
   # `.basicConfig` does not execute. Thus we set the level directly.
@@ -21,16 +27,21 @@ else:
 
 logger = logging.getLogger()
 
-# p is the count
-# e is the offset
-HIGH_FIVE_BASE_URL = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&o=HighFiveDate,Descending&site=null"
-BATCH_SIZE = 1000
+#
+# Get our config
+#
 
-RETRIES = 3
-BACKOFF_FACTOR = 0.5
+config_helper = ConfigHelper.get_config_helper(default_env_name="dev", aws_parameter_prefix="")
 
-NAMES_OF_INTEREST = [ 'Katie', 'Kathryn', 'Toews' ]
-COMMUNITIES_OF_INTEREST = [ 'Port Moody', 'New Westminster' ]
+BASE_URL                = config_helper.get("base-url")
+BATCH_SIZE              = config_helper.getInt("batch-size")
+REQUEST_RETRIES         = config_helper.getInt("request-retries")
+REQUEST_BACKOFF_FACTOR  = config_helper.getFloat("request-backoff-factor")
+
+NAMES_OF_INTEREST       = config_helper.getArray("names-of-interest")
+COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
+
+EMAIL_ADDRESS           = config_helper.get("email-address", is_secret=True)
 
 NAMES_OF_INTEREST_LOWERCASE = [s.lower() for s in NAMES_OF_INTEREST]
 COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
@@ -103,8 +114,8 @@ def print_high_five(high_five):
   print(f"Message: {high_five['message']}")
 
 def get_all_high_fives():
-  retries = Retry(total = RETRIES, backoff_factor = BACKOFF_FACTOR)
-  adapter = HTTPAdapter(max_retries = retries)
+  retries = Retry(total=REQUEST_RETRIES, backoff_factor=REQUEST_BACKOFF_FACTOR)
+  adapter = HTTPAdapter(max_retries=retries)
 
   session = requests.Session()
   session.mount("https://", adapter)
@@ -125,12 +136,14 @@ def get_all_high_fives():
   all_high_fives = []
 
   while True:
-    url = HIGH_FIVE_BASE_URL + f"&p={BATCH_SIZE}&e={current_offset}"
+    # p is the count
+    # e is the offset
+    url = BASE_URL + f"&p={BATCH_SIZE}&e={current_offset}"
 
     response = session.get(url)
 
     if response.status_code != 200:
-      logger.error(f"Received status code {response.status_code} after {RETRIES} attempts from URL '{url}'")
+      logger.error(f"Received status code {response.status_code} after {REQUEST_RETRIES} attempts from URL '{url}'")
       sys.exit(-1)
 
     response_data = json.loads(response.text)
