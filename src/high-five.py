@@ -192,6 +192,10 @@ def sort_person_in_community_counts(person_counts):
 
   return sorted_person_counts
 
+#
+# Request all of the high fives and filter out the ones that contain our person and community of interest
+#
+
 all_high_fives = get_all_high_fives()
 
 interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
