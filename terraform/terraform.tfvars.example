@@ -1,0 +1,3 @@
+notifications_email = ""
+target_email = ""
+project_github_location = "https://github.com/euan-forrester/high-five-tracker"
