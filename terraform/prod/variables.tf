@@ -10,11 +10,14 @@ variable "application_name" {
   default = "high-five-tracker"
 }
 
-variable "notifications_email" {
+variable "system_email" {
 }
 
 variable "target_email" {
 }
 
-variable "project_github_location" {
+variable "names_of_interest" {
+}
+
+variable "communities_of_interest" {
 }

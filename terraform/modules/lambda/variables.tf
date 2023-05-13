@@ -1,13 +1,10 @@
-variable "region" {
-  default = "us-west-2"
+variable "environment" {
 }
 
-variable "environment" {
-  default = "dev"
+variable "region" {
 }
 
 variable "application_name" {
-  default = "high-five-tracker"
 }
 
 variable "system_email" {
@@ -20,4 +17,16 @@ variable "names_of_interest" {
 }
 
 variable "communities_of_interest" {
+}
+
+variable "base_url" {
+}
+
+variable "batch_size" {
+}
+
+variable "num_retries" {
+}
+
+variable "retry_backoff_factor" {
 }
