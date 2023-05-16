@@ -8,7 +8,7 @@ import json
 class ConfigHelper:
     
     @staticmethod
-    def get_config_helper(default_env_name, aws_parameter_prefix):
+    def get_config_helper(default_env_name, application_name):
         if not "ENVIRONMENT" in os.environ:
             logging.info("Did not find ENVIRONMENT environment variable, running in development mode and loading config from config files.")
 
@@ -19,7 +19,7 @@ class ConfigHelper:
 
             logging.info(f"Found ENVIRONMENT environment variable containing '{ENVIRONMENT}': assuming we're running in AWS and getting our parameters from the AWS Parameter Store")
 
-            return ConfigHelperParameterStore(environment=ENVIRONMENT, key_prefix=aws_parameter_prefix)
+            return ConfigHelperParameterStore(environment=ENVIRONMENT, application_name=application_name)
 
     @staticmethod
     def _log(param, value, is_secret, cache_type="none"):
@@ -94,10 +94,10 @@ class ConfigHelperParameterStore(ConfigHelper):
     Reads config items from the AWS Parameter Store
     '''
 
-    def __init__(self, environment, key_prefix):
-        self.environment    = environment
-        self.key_prefix     = key_prefix
-        self.ssm            = boto3.client('ssm') # Region is read from the AWS_DEFAULT_REGION env var
+    def __init__(self, environment, application_name):
+        self.environment      = environment
+        self.application_name = application_name
+        self.ssm              = boto3.client('ssm') # Region is read from the AWS_DEFAULT_REGION env var
 
     def get_environment(self):
         return self.environment
@@ -125,7 +125,7 @@ class ConfigHelperParameterStore(ConfigHelper):
                 raise
 
     def _get_full_path(self, key):
-        return f'/{self.environment}/{self.key_prefix}/{key}'
+        return f'/{self.application_name}/{self.environment}/{key}'
 
     # This will throw a ValueError if the parameter doesn't contain an int
     def getInt(self, key, is_secret=False):

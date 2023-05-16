@@ -31,7 +31,7 @@ logger = logging.getLogger()
 # Get our config
 #
 
-config_helper = ConfigHelper.get_config_helper(default_env_name="dev", aws_parameter_prefix="")
+config_helper = ConfigHelper.get_config_helper(default_env_name="dev", application_name="high-five-tracker")
 
 BASE_URL                = config_helper.get("base-url")
 BATCH_SIZE              = config_helper.getInt("batch-size")
