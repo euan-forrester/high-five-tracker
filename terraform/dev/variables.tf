@@ -16,6 +16,9 @@ variable "system_email" {
 variable "target_email" {
 }
 
+variable "from_email" {
+}
+
 variable "names_of_interest" {
 }
 

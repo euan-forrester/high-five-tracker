@@ -35,8 +35,8 @@ config_helper = ConfigHelper.get_config_helper(default_env_name="dev", aws_param
 
 BASE_URL                = config_helper.get("base-url")
 BATCH_SIZE              = config_helper.getInt("batch-size")
-REQUEST_RETRIES         = config_helper.getInt("request-retries")
-REQUEST_BACKOFF_FACTOR  = config_helper.getFloat("request-backoff-factor")
+NUM_RETRIES             = config_helper.getInt("num-retries")
+RETRY_BACKOFF_FACTOR    = config_helper.getFloat("retry-backoff-factor")
 
 NAMES_OF_INTEREST       = config_helper.getArray("names-of-interest")
 COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
@@ -114,7 +114,7 @@ def print_high_five(high_five):
   print(f"Message: {high_five['message']}")
 
 def get_all_high_fives():
-  retries = Retry(total=REQUEST_RETRIES, backoff_factor=REQUEST_BACKOFF_FACTOR)
+  retries = Retry(total=NUM_RETRIES, backoff_factor=RETRY_BACKOFF_FACTOR)
   adapter = HTTPAdapter(max_retries=retries)
 
   session = requests.Session()

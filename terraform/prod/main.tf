@@ -7,6 +7,7 @@ module "lambda" {
   
   system_email            = var.system_email
   target_email            = var.target_email
+  from_email              = var.from_email
   names_of_interest       = var.names_of_interest
   communities_of_interest = var.communities_of_interest
 

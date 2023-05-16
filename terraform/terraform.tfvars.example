@@ -3,5 +3,6 @@
 
 system_email = "a@b.com"
 target_email = "a@b.com"
+from_email = "a@b.com"
 names_of_interest = "[\"First-name\", \"Alternate-first-name\", \"Last-name\"]"
 communities_of_interest = "[\"Community1\", \"Community2\"]"
