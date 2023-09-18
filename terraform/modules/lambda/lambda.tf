@@ -84,7 +84,7 @@ resource "aws_lambda_function" "high_fives" {
   function_name = var.lambda_function_name
   role = aws_iam_role.iam_for_lambda.arn
   publish = true
-  timeout = 30 # Normally takes about 7-8 seconds to run, and 5 seconds to start up
+  timeout = 20 # Normally takes about 5-6 seconds to run, and 3-4 seconds to start up
   memory_size = 512 # Normally takes about 220MB
 
   environment {

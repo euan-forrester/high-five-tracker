@@ -9,7 +9,6 @@ import sys
 import json
 import re
 import spacy
-# from beautifulsoup4 import BeautifulSoup
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -215,5 +214,3 @@ def get_new_high_fives_and_send_email(event, context):
   for high_five in interesting_high_fives:
     logger.info("\n\n")
     print_high_five(high_five)
-
-get_new_high_fives_and_send_email(0, 0)
