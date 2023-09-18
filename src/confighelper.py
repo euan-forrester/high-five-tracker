@@ -108,6 +108,8 @@ class ConfigHelperParameterStore(ConfigHelper):
 
         value = self._get_from_parameter_store(full_path, is_secret)
 
+        ConfigHelper._log(key, value, is_secret)
+
         return value
 
     def _get_from_parameter_store(self, full_path, is_secret=False):

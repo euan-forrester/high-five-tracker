@@ -14,8 +14,6 @@ RUN mkdir ${LAMBDA_TASK_ROOT}/config
 # Copy function code
 COPY high-five.py ${LAMBDA_TASK_ROOT}
 COPY confighelper.py ${LAMBDA_TASK_ROOT}
-COPY config/config.ini ${LAMBDA_TASK_ROOT}/config
-COPY config/secrets.ini ${LAMBDA_TASK_ROOT}/config
 
 RUN chmod +x ${LAMBDA_TASK_ROOT}/high-five.py
 
