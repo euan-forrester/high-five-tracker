@@ -31,17 +31,18 @@ logger = logging.getLogger()
 # Get our config
 #
 
-config_helper = ConfigHelper.get_config_helper(default_env_name="dev", aws_parameter_prefix="")
+config_helper = ConfigHelper.get_config_helper(default_env_name="dev", application_name="high-five-tracker")
 
 BASE_URL                = config_helper.get("base-url")
 BATCH_SIZE              = config_helper.getInt("batch-size")
-REQUEST_RETRIES         = config_helper.getInt("request-retries")
-REQUEST_BACKOFF_FACTOR  = config_helper.getFloat("request-backoff-factor")
+NUM_RETRIES             = config_helper.getInt("num-retries")
+RETRY_BACKOFF_FACTOR    = config_helper.getFloat("retry-backoff-factor")
 
 NAMES_OF_INTEREST       = config_helper.getArray("names-of-interest")
 COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
 
-EMAIL_ADDRESS           = config_helper.get("email-address", is_secret=True)
+TARGET_EMAIL_ADDRESS    = config_helper.get("target-email")
+FROM_EMAIL_ADDRESS      = config_helper.get("from-email")
 
 NAMES_OF_INTEREST_LOWERCASE = [s.lower() for s in NAMES_OF_INTEREST]
 COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
@@ -92,7 +93,7 @@ def high_five_has_name_of_interest(high_five):
   for name in NAMES_OF_INTEREST_LOWERCASE:
     if name in high_five['message'].lower():
       if (high_five['community'] is None) or (high_five['community'].lower() in COMMUNITIES_OF_INTEREST_LOWERCASE):
-        print(f"Found {name} in {high_five['community']}")
+        logger.info(f"Found {name} in {high_five['community']}")
         return True
 
   return False
@@ -108,13 +109,13 @@ def get_all_people_from_high_five(high_five):
   return person_names_deduplicated
 
 def print_high_five(high_five):
-  print(f"Date: {high_five['date'].strftime('%b %-d, %Y')}") if high_five['date'] is not None else None
-  print(f"From: {high_five['name']}") if high_five['name'] is not None else None
-  print(f"Community: {high_five['community']}") if high_five['community'] is not None else None
-  print(f"Message: {high_five['message']}")
+  logger.info(f"Date: {high_five['date'].strftime('%b %-d, %Y')}") if high_five['date'] is not None else None
+  logger.info(f"From: {high_five['name']}") if high_five['name'] is not None else None
+  logger.info(f"Community: {high_five['community']}") if high_five['community'] is not None else None
+  logger.info(f"Message: {high_five['message']}")
 
 def get_all_high_fives():
-  retries = Retry(total=REQUEST_RETRIES, backoff_factor=REQUEST_BACKOFF_FACTOR)
+  retries = Retry(total=NUM_RETRIES, backoff_factor=RETRY_BACKOFF_FACTOR)
   adapter = HTTPAdapter(max_retries=retries)
 
   session = requests.Session()
@@ -192,26 +193,24 @@ def sort_person_in_community_counts(person_counts):
 
   return sorted_person_counts
 
-#
-# Request all of the high fives and filter out the ones that contain our person and community of interest
-#
+def get_new_high_fives_and_send_email(event, context):
+  # Request all of the high fives and filter out the ones that contain our person and community of interest
 
-all_high_fives = get_all_high_fives()
+  all_high_fives = get_all_high_fives()
 
-interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
+  interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
 
-'''
-person_counts = get_person_in_community_counts(all_high_fives)
-sorted_person_counts = sort_person_in_community_counts(person_counts)
+  '''
+  person_counts = get_person_in_community_counts(all_high_fives)
+  sorted_person_counts = sort_person_in_community_counts(person_counts)
 
-for community, person_counts in sorted_person_counts.items():
-  print("\n")
-  for person_name, count in person_counts.items():
-    print(f"Name: {person_name}, Community: {community} Total high fives: {count}")
-'''
+  for community, person_counts in sorted_person_counts.items():
+    print("\n")
+    for person_name, count in person_counts.items():
+      print(f"Name: {person_name}, Community: {community} Total high fives: {count}")
+  '''
 
-print(f"Found {len(interesting_high_fives)} interesting high fives")
-for high_five in interesting_high_fives:
-  print("\n\n")
-  print_high_five(high_five)
-
+  logger.info(f"Found {len(interesting_high_fives)} interesting high fives")
+  for high_five in interesting_high_fives:
+    logger.info("\n\n")
+    print_high_five(high_five)
