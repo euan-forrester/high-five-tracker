@@ -5,6 +5,8 @@ module "lambda" {
   region                  = var.region
   application_name        = var.application_name
   
+  num_days_to_keep_images = 30
+
   system_email            = var.system_email
   target_email            = var.target_email
   from_email              = var.from_email
