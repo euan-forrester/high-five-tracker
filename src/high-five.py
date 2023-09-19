@@ -41,7 +41,8 @@ RETRY_BACKOFF_FACTOR    = config_helper.getFloat("retry-backoff-factor")
 NAMES_OF_INTEREST       = config_helper.getArray("names-of-interest")
 COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
 
-TARGET_EMAIL_ADDRESS    = config_helper.get("target-email")
+TO_EMAIL_ADDRESS        = config_helper.get("to-email")
+CC_EMAIL_ADDRESS        = config_helper.get("cc-email")
 FROM_EMAIL_ADDRESS      = config_helper.get("from-email")
 
 NAMES_OF_INTEREST_LOWERCASE = [s.lower() for s in NAMES_OF_INTEREST]

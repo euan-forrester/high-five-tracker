@@ -1,8 +1,9 @@
 # System email gets alarms, system notifications, etc
-# Target email gets the email summary of mentions of any of the names of interest in any of the communities of interest
+# To email gets the email summary of mentions of any of the names of interest in any of the communities of interest. It's also cc'd to the cc email address
 
 system_email = "a@b.com"
-target_email = "a@b.com"
+to_email = "a@b.com"
+cc_email = "a@b.com"
 from_email = "a@b.com"
 names_of_interest = "[\"First-name\", \"Alternate-first-name\", \"Last-name\"]"
 communities_of_interest = "[\"Community1\", \"Community2\"]"
