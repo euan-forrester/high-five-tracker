@@ -44,6 +44,19 @@ resource "aws_iam_role" "iam_for_lambda" {
       ]
     },
     {
+      "Sid": "SESSendPolicy",
+      "Effect": "Allow",
+      "Action": [
+        "ses:SendEmail"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringLike": {
+          "ses:FromAddress":"${var.from_email}"
+        }
+      }
+    },
+    {
       "Sid": "SQSDeadLetterAccessPolicy",
       "Effect": "Allow",
       "Action": [

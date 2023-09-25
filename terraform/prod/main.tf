@@ -8,6 +8,7 @@ module "lambda" {
   num_days_to_keep_images = 30
 
   system_email            = var.system_email
+  subject_line            = var.subject_line
   to_email                = var.to_email
   cc_email                = var.cc_email
   from_email              = var.from_email

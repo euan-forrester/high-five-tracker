@@ -13,6 +13,9 @@ variable "application_name" {
 variable "system_email" {
 }
 
+variable "subject_line" {
+}
+
 variable "to_email" {
 }
 
