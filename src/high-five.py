@@ -46,7 +46,8 @@ RETRY_BACKOFF_FACTOR    = config_helper.getFloat("retry-backoff-factor")
 NAMES_OF_INTEREST       = config_helper.getArray("names-of-interest")
 COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
 
-SUBJECT_LINE            = config_helper.get("subject-line")
+SUBJECT_LINE_SINGULAR   = config_helper.get("subject-line-singular")
+SUBJECT_LINE_PLURAL     = config_helper.get("subject-line-plural")
 TO_EMAIL_ADDRESS        = config_helper.get("to-email")
 CC_EMAIL_ADDRESS        = config_helper.get("cc-email")
 FROM_EMAIL_ADDRESS      = config_helper.get("from-email")
@@ -216,6 +217,11 @@ def stringify_high_five(high_five):
 def email_high_fives(high_fives):
   body_text = "\n\n".join(map(stringify_high_five, high_fives))
 
+  subject_line = SUBJECT_LINE_SINGULAR
+
+  if len(high_fives) > 1:
+    subject_line = SUBJECT_LINE_PLURAL.format(len(high_fives))
+
   # Object structure described at https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ses/client/send_email.html#
   send_args = {
     'Source': FROM_EMAIL_ADDRESS,
@@ -223,7 +229,7 @@ def email_high_fives(high_fives):
       'ToAddresses': [TO_EMAIL_ADDRESS],
     },
     'Message': {
-      'Subject': {'Data': SUBJECT_LINE},
+      'Subject': {'Data': subject_line},
       'Body': {'Text': {'Data': body_text}}
     }
   }

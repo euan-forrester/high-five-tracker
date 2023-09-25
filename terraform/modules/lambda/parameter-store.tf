@@ -47,11 +47,18 @@ resource "aws_ssm_parameter" "aws_region" {
   value       = var.region
 }
 
-resource "aws_ssm_parameter" "subject_line" {
-  name        = "/${var.application_name}/${var.environment}/subject-line"
-  description = "Subject line to use when sending our High Fives of interest to"
+resource "aws_ssm_parameter" "subject_line_singular" {
+  name        = "/${var.application_name}/${var.environment}/subject-line-singular"
+  description = "Subject line to use when sending one High Fave"
   type        = "String"
-  value       = var.subject_line
+  value       = var.subject_line_singular
+}
+
+resource "aws_ssm_parameter" "subject_line_plural" {
+  name        = "/${var.application_name}/${var.environment}/subject-line-plural"
+  description = "Subject line to use when sending more than one High Five"
+  type        = "String"
+  value       = var.subject_line_plural
 }
 
 # Arguably we should make this encrypted, but it costs money to maintain the KMS key
