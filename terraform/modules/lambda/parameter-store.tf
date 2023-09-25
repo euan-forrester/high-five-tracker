@@ -40,12 +40,41 @@ resource "aws_ssm_parameter" "communities_of_interest" {
   value       = var.communities_of_interest
 }
 
+resource "aws_ssm_parameter" "aws_region" {
+  name        = "/${var.application_name}/${var.environment}/aws-region"
+  description = "AWS region to send our emails from"
+  type        = "String"
+  value       = var.region
+}
+
+resource "aws_ssm_parameter" "subject_line_singular" {
+  name        = "/${var.application_name}/${var.environment}/subject-line-singular"
+  description = "Subject line to use when sending one High Fave"
+  type        = "String"
+  value       = var.subject_line_singular
+}
+
+resource "aws_ssm_parameter" "subject_line_plural" {
+  name        = "/${var.application_name}/${var.environment}/subject-line-plural"
+  description = "Subject line to use when sending more than one High Five"
+  type        = "String"
+  value       = var.subject_line_plural
+}
+
 # Arguably we should make this encrypted, but it costs money to maintain the KMS key
-resource "aws_ssm_parameter" "target_email" {
-  name        = "/${var.application_name}/${var.environment}/target-email"
+resource "aws_ssm_parameter" "to_email" {
+  name        = "/${var.application_name}/${var.environment}/to-email"
   description = "Email address to send our High Fives of interest to"
   type        = "String"
-  value       = var.target_email
+  value       = var.to_email
+}
+
+# Arguably we should make this encrypted, but it costs money to maintain the KMS key
+resource "aws_ssm_parameter" "cc_email" {
+  name        = "/${var.application_name}/${var.environment}/cc-email"
+  description = "Email address to cc when we send our High Fives of interest"
+  type        = "String"
+  value       = var.cc_email
 }
 
 # Arguably we should make this encrypted, but it costs money to maintain the KMS key

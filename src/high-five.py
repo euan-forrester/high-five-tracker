@@ -4,6 +4,9 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+import boto3
+from botocore.exceptions import ClientError
+
 import logging
 import sys
 import json
@@ -33,6 +36,8 @@ logger = logging.getLogger()
 
 config_helper = ConfigHelper.get_config_helper(default_env_name="dev", application_name="high-five-tracker")
 
+AWS_REGION              = config_helper.get("aws-region")
+
 BASE_URL                = config_helper.get("base-url")
 BATCH_SIZE              = config_helper.getInt("batch-size")
 NUM_RETRIES             = config_helper.getInt("num-retries")
@@ -41,14 +46,23 @@ RETRY_BACKOFF_FACTOR    = config_helper.getFloat("retry-backoff-factor")
 NAMES_OF_INTEREST       = config_helper.getArray("names-of-interest")
 COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
 
-TARGET_EMAIL_ADDRESS    = config_helper.get("target-email")
+SUBJECT_LINE_SINGULAR   = config_helper.get("subject-line-singular")
+SUBJECT_LINE_PLURAL     = config_helper.get("subject-line-plural")
+TO_EMAIL_ADDRESS        = config_helper.get("to-email")
+CC_EMAIL_ADDRESS        = config_helper.get("cc-email")
 FROM_EMAIL_ADDRESS      = config_helper.get("from-email")
 
 NAMES_OF_INTEREST_LOWERCASE = [s.lower() for s in NAMES_OF_INTEREST]
 COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
 
+#
+# Init AWS stuff
+#
+
+ses = boto3.client('ses', region_name=AWS_REGION)
+
 # Load English tokenizer, tagger, parser and NER
-nlp = spacy.load("en_core_web_sm")
+#nlp = spacy.load("en_core_web_sm") # Take this out while unused, to save startup time
 
 def sanitize_string(s):
   if s is None:
@@ -107,12 +121,6 @@ def get_all_people_from_high_five(high_five):
   person_names_deduplicated = list(set(person_names))
 
   return person_names_deduplicated
-
-def print_high_five(high_five):
-  logger.info(f"Date: {high_five['date'].strftime('%b %-d, %Y')}") if high_five['date'] is not None else None
-  logger.info(f"From: {high_five['name']}") if high_five['name'] is not None else None
-  logger.info(f"Community: {high_five['community']}") if high_five['community'] is not None else None
-  logger.info(f"Message: {high_five['message']}")
 
 def get_all_high_fives():
   retries = Retry(total=NUM_RETRIES, backoff_factor=RETRY_BACKOFF_FACTOR)
@@ -193,6 +201,55 @@ def sort_person_in_community_counts(person_counts):
 
   return sorted_person_counts
 
+def stringify_high_five_components(high_five):
+  components = [
+    f"Date: {high_five['date'].strftime('%b %-d, %Y')}" if high_five['date'] is not None else None,
+    f"From: {high_five['name']}" if high_five['name'] is not None else None,
+    f"Community: {high_five['community']}" if high_five['community'] is not None else None,
+    f"Message: {high_five['message']}"
+  ]
+
+  return filter(None, components)
+
+def stringify_high_five(high_five):
+  return "\n".join(stringify_high_five_components(high_five))
+
+def email_high_fives(high_fives):
+  body_text = "\n\n".join(map(stringify_high_five, high_fives))
+
+  subject_line = SUBJECT_LINE_SINGULAR
+
+  if len(high_fives) > 1:
+    subject_line = SUBJECT_LINE_PLURAL.format(len(high_fives))
+
+  # Object structure described at https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ses/client/send_email.html#
+  send_args = {
+    'Source': FROM_EMAIL_ADDRESS,
+    'Destination': {
+      'ToAddresses': [TO_EMAIL_ADDRESS],
+    },
+    'Message': {
+      'Subject': {'Data': subject_line},
+      'Body': {'Text': {'Data': body_text}}
+    }
+  }
+  if CC_EMAIL_ADDRESS is not None:
+    send_args['Destination']['CcAddresses'] = [CC_EMAIL_ADDRESS]
+
+  try:
+    response = ses.send_email(**send_args)
+    message_id = response['MessageId']
+    logger.info("Successfully sent mail %s from %s to %s.", message_id, FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS)
+  except ClientError:
+    logger.exception("Could not send mail from %s to %s.", FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS)
+    raise
+
+def log_high_five(high_five):
+  high_five_components = stringify_high_five_components(high_five)
+
+  for component in high_five_components:
+    logger.info(component)
+
 def get_new_high_fives_and_send_email(event, context):
   # Request all of the high fives and filter out the ones that contain our person and community of interest
 
@@ -213,4 +270,6 @@ def get_new_high_fives_and_send_email(event, context):
   logger.info(f"Found {len(interesting_high_fives)} interesting high fives")
   for high_five in interesting_high_fives:
     logger.info("\n\n")
-    print_high_five(high_five)
+    log_high_five(high_five)
+
+  email_high_fives(interesting_high_fives)

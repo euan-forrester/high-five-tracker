@@ -10,7 +10,16 @@ variable "application_name" {
 variable "system_email" {
 }
 
-variable "target_email" {
+variable "subject_line_singular" {
+}
+
+variable "subject_line_plural" {
+}
+
+variable "to_email" {
+}
+
+variable "cc_email" {
 }
 
 variable "from_email" {
