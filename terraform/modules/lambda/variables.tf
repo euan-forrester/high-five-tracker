@@ -7,6 +7,15 @@ variable "region" {
 variable "application_name" {
 }
 
+variable "run_at_script_startup" {
+}
+
+variable "check_database" {
+}
+
+variable "send_email" {
+}
+
 variable "system_email" {
 }
 

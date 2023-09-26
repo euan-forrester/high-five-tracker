@@ -46,6 +46,11 @@ RETRY_BACKOFF_FACTOR    = config_helper.getFloat("retry-backoff-factor")
 NAMES_OF_INTEREST       = config_helper.getArray("names-of-interest")
 COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
 
+RUN_AT_SCRIPT_STARTUP   = config_helper.getBool("run-at-script-startup")
+
+CHECK_DATABASE          = config_helper.getBool("check-database")
+
+SEND_EMAIL              = config_helper.getBool("send-email")
 SUBJECT_LINE_SINGULAR   = config_helper.get("subject-line-singular")
 SUBJECT_LINE_PLURAL     = config_helper.get("subject-line-plural")
 TO_EMAIL_ADDRESS        = config_helper.get("to-email")
@@ -272,4 +277,8 @@ def get_new_high_fives_and_send_email(event, context):
     logger.info("\n\n")
     log_high_five(high_five)
 
-  email_high_fives(interesting_high_fives)
+  if SEND_EMAIL:
+    email_high_fives(interesting_high_fives)
+
+if RUN_AT_SCRIPT_STARTUP:
+  get_new_high_fives_and_send_email(None, None)

@@ -7,6 +7,10 @@ module "lambda" {
 
   num_days_to_keep_images = 7
   
+  run_at_script_startup   = false
+  check_database          = true
+
+  send_email              = true
   system_email            = var.system_email
   subject_line_singular   = var.subject_line_singular
   subject_line_plural     = var.subject_line_plural
