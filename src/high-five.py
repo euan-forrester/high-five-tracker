@@ -70,9 +70,19 @@ ses = boto3.client('ses', region_name=AWS_REGION)
 def high_five_has_name_of_interest(high_five):
   for name in NAMES_OF_INTEREST_LOWERCASE:
     if name in high_five['message'].lower():
-      if (high_five['community'] is None) or (high_five['community'].lower() in COMMUNITIES_OF_INTEREST_LOWERCASE):
-        logger.info(f"Found {name} in {high_five['community']}")
-        return True
+      community_matches = False
+
+      if len(high_five['communities']) == 0:
+        logger.info(f"No community specified in High Five, so found name {name} by default")
+        community_matches = True
+
+      for community_name in high_five['communities']:
+        if community_name.lower() in COMMUNITIES_OF_INTEREST_LOWERCASE:
+          logger.info(f"Found {name} in {community_name}")
+          community_matches = True
+          break
+
+      return community_matches
 
   return False
 

@@ -24,8 +24,8 @@ class HighFiveParser:
 
     card_div = soup.find('div', {'class': 'highfive-card'})
 
-    community_div = card_div.find('span', {'class': 'field-communityname'}) if card_div is not None else None
-    community_text = community_div.text if community_div is not None else None
+    community_divs = card_div.find_all('span', {'class': 'field-communityname'}) if card_div is not None else None
+    community_texts = list(map(lambda community_div : community_div.text, community_divs)) if community_divs is not None else []
 
     message_div = card_div.find('div', {'class': 'field-message'}) if card_div is not None else None
     message_text = message_div.text if message_div is not None else None
@@ -40,7 +40,7 @@ class HighFiveParser:
       'id': i['Id'],
       'date': parse_date(sanitize_string(date_text)),
       'name': sanitize_string(firstname_text),
-      'community': sanitize_string(community_text),
+      'communities': list(map(sanitize_string, community_texts)),
       'message': sanitize_string(message_text)
     }
 
@@ -48,12 +48,18 @@ class HighFiveParser:
   def stringify_high_five_components(high_five):
     components = [
       f"Date: {HighFiveParser.stringify_date(high_five['date'])}" if high_five['date'] is not None else None,
-      f"From: {high_five['name']}" if high_five['name'] is not None else None,
-      f"Community: {high_five['community']}" if high_five['community'] is not None else None,
-      f"Message: {high_five['message']}"
+      f"From: {high_five['name']}" if high_five['name'] is not None else None
     ]
 
-    return filter(None, components)
+    if len(high_five['communities']) == 1:
+      components.append(f"Community: {high_five['communities'][0]}")
+
+    if len(high_five['communities']) > 1:
+      components.append(f"Communities: {' and '.join(high_five['communities'])}")
+
+    components.append(f"Message: {high_five['message']}")
+
+    return list(filter(None, components))
 
   @staticmethod
   def stringify_high_five(high_five):
