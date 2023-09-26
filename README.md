@@ -1,11 +1,19 @@
 # high-five-tracker
 Tracks mentions in Fraser Health's high fives
 
-### To build
+### Run tests
 
 ```
-terraform init
+pip3 install -U pytest
+cd tests
+pytest
+```
 
+### Build
+
+```
+cd terraform/[dev|prod]
+terraform init
 terraform apply
 ```
 

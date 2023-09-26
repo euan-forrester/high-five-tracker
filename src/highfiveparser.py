@@ -47,7 +47,7 @@ class HighFiveParser:
   @staticmethod
   def stringify_high_five_components(high_five):
     components = [
-      f"Date: {high_five['date'].strftime('%b %-d, %Y')}" if high_five['date'] is not None else None,
+      f"Date: {HighFiveParser.stringify_date(high_five['date'])}" if high_five['date'] is not None else None,
       f"From: {high_five['name']}" if high_five['name'] is not None else None,
       f"Community: {high_five['community']}" if high_five['community'] is not None else None,
       f"Message: {high_five['message']}"
@@ -58,3 +58,7 @@ class HighFiveParser:
   @staticmethod
   def stringify_high_five(high_five):
     return "\n".join(HighFiveParser.stringify_high_five_components(high_five))
+
+  @staticmethod
+  def stringify_date(date):
+    return date.strftime('%b %-d, %Y')
