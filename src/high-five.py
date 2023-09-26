@@ -10,11 +10,8 @@ from botocore.exceptions import ClientError
 import logging
 import sys
 import json
-import re
-import spacy
-from bs4 import BeautifulSoup
-from datetime import datetime
 
+from highfiveparser import HighFiveParser
 from confighelper import ConfigHelper
 
 #
@@ -66,66 +63,28 @@ COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
 
 ses = boto3.client('ses', region_name=AWS_REGION)
 
-# Load English tokenizer, tagger, parser and NER
-#nlp = spacy.load("en_core_web_sm") # Take this out while unused, to save startup time
-
-def sanitize_string(s):
-  if s is None:
-    return None
-
-  s = s.strip()
-  s = re.sub(r'[^\x20-\x7E]', '', s)
-  return s
-
-def parse_date(s):
-  if s is None:
-    return None
-
-  return datetime.strptime(s, '%b %d, %Y') # Example date is 'Apr 27, 2023'
-
-def parse_high_five(i):
-  soup = BeautifulSoup(i['Html'], 'html.parser')  
-
-  card_div = soup.find('div', {'class': 'highfive-card'})
-
-  community_div = card_div.find('span', {'class': 'field-communityname'}) if card_div is not None else None
-  community_text = community_div.text if community_div is not None else None
-
-  message_div = card_div.find('div', {'class': 'field-message'}) if card_div is not None else None
-  message_text = message_div.text if message_div is not None else None
-
-  date_div = card_div.find('div', {'class': 'field-highfivedate'}) if card_div is not None else None
-  date_text = date_div.text if date_div is not None else None
-
-  firstname_div = card_div.find('div', {'class': 'field-firstname'}) if card_div is not None else None
-  firstname_text = firstname_div.text if firstname_div is not None else None
-
-  return {
-    'id': i['Id'],
-    'date': parse_date(sanitize_string(date_text)),
-    'name': sanitize_string(firstname_text),
-    'community': sanitize_string(community_text),
-    'message': sanitize_string(message_text)
-  }
+#
+# Helper functions
+#
 
 def high_five_has_name_of_interest(high_five):
   for name in NAMES_OF_INTEREST_LOWERCASE:
     if name in high_five['message'].lower():
-      if (high_five['community'] is None) or (high_five['community'].lower() in COMMUNITIES_OF_INTEREST_LOWERCASE):
-        logger.info(f"Found {name} in {high_five['community']}")
-        return True
+      community_matches = False
+
+      if len(high_five['communities']) == 0:
+        logger.info(f"No community specified in High Five, so found name {name} by default")
+        community_matches = True
+
+      for community_name in high_five['communities']:
+        if community_name.lower() in COMMUNITIES_OF_INTEREST_LOWERCASE:
+          logger.info(f"Found {name} in {community_name}")
+          community_matches = True
+          break
+
+      return community_matches
 
   return False
-
-def get_all_people_from_high_five(high_five):
-  document = nlp(high_five['message'])
-
-  person_entities = list(filter(lambda entity:entity.label_ == 'PERSON', document.ents))
-  person_names = list(map(lambda entity:entity.text, person_entities))
-
-  person_names_deduplicated = list(set(person_names))
-
-  return person_names_deduplicated
 
 def get_all_high_fives():
   retries = Retry(total=NUM_RETRIES, backoff_factor=RETRY_BACKOFF_FACTOR)
@@ -166,7 +125,7 @@ def get_all_high_fives():
 
     current_offset += BATCH_SIZE
 
-    high_fives_batch = list(map(parse_high_five, response_data['Results']))
+    high_fives_batch = list(map(HighFiveParser.parse_high_five, response_data['Results']))
     high_fives_batch = list(filter(lambda high_five:high_five['message'] is not None, high_fives_batch))
 
     all_high_fives += high_fives_batch
@@ -176,51 +135,8 @@ def get_all_high_fives():
 
   return all_high_fives
 
-def get_person_in_community_counts(high_fives):
-  person_counts = {}
-
-  for high_five in all_high_fives:
-    new_people = get_all_people_from_high_five(high_five)
-
-    if len(new_people) == 0:
-      continue
-
-    community = high_five['community']
-
-    if community not in person_counts:
-      person_counts[community] = {}
-
-    for person in new_people:
-      if person not in person_counts[community]:
-        person_counts[community][person] = 1
-      else:
-        person_counts[community][person] += 1
-  
-  return person_counts
-
-def sort_person_in_community_counts(person_counts):
-  sorted_person_counts = {}
-
-  for community in person_counts.keys():
-    sorted_person_counts[community] = dict(sorted(person_counts[community].items(), key=lambda x: x[1], reverse=True))    
-
-  return sorted_person_counts
-
-def stringify_high_five_components(high_five):
-  components = [
-    f"Date: {high_five['date'].strftime('%b %-d, %Y')}" if high_five['date'] is not None else None,
-    f"From: {high_five['name']}" if high_five['name'] is not None else None,
-    f"Community: {high_five['community']}" if high_five['community'] is not None else None,
-    f"Message: {high_five['message']}"
-  ]
-
-  return filter(None, components)
-
-def stringify_high_five(high_five):
-  return "\n".join(stringify_high_five_components(high_five))
-
 def email_high_fives(high_fives):
-  body_text = "\n\n".join(map(stringify_high_five, high_fives))
+  body_text = "\n\n".join(map(HighFiveParser.stringify_high_five, high_fives))
 
   subject_line = SUBJECT_LINE_SINGULAR
 
@@ -250,7 +166,7 @@ def email_high_fives(high_fives):
     raise
 
 def log_high_five(high_five):
-  high_five_components = stringify_high_five_components(high_five)
+  high_five_components = HighFiveParser.stringify_high_five_components(high_five)
 
   for component in high_five_components:
     logger.info(component)
@@ -261,16 +177,6 @@ def get_new_high_fives_and_send_email(event, context):
   all_high_fives = get_all_high_fives()
 
   interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
-
-  '''
-  person_counts = get_person_in_community_counts(all_high_fives)
-  sorted_person_counts = sort_person_in_community_counts(person_counts)
-
-  for community, person_counts in sorted_person_counts.items():
-    print("\n")
-    for person_name, count in person_counts.items():
-      print(f"Name: {person_name}, Community: {community} Total high fives: {count}")
-  '''
 
   logger.info(f"Found {len(interesting_high_fives)} interesting high fives")
   for high_five in interesting_high_fives:
