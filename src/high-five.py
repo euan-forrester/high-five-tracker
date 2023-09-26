@@ -10,11 +10,9 @@ from botocore.exceptions import ClientError
 import logging
 import sys
 import json
-import re
 import spacy
-from bs4 import BeautifulSoup
-from datetime import datetime
 
+from highfiveparser import HighFiveParser
 from confighelper import ConfigHelper
 
 #
@@ -68,45 +66,6 @@ ses = boto3.client('ses', region_name=AWS_REGION)
 
 # Load English tokenizer, tagger, parser and NER
 #nlp = spacy.load("en_core_web_sm") # Take this out while unused, to save startup time
-
-def sanitize_string(s):
-  if s is None:
-    return None
-
-  s = s.strip()
-  s = re.sub(r'[^\x20-\x7E]', '', s)
-  return s
-
-def parse_date(s):
-  if s is None:
-    return None
-
-  return datetime.strptime(s, '%b %d, %Y') # Example date is 'Apr 27, 2023'
-
-def parse_high_five(i):
-  soup = BeautifulSoup(i['Html'], 'html.parser')  
-
-  card_div = soup.find('div', {'class': 'highfive-card'})
-
-  community_div = card_div.find('span', {'class': 'field-communityname'}) if card_div is not None else None
-  community_text = community_div.text if community_div is not None else None
-
-  message_div = card_div.find('div', {'class': 'field-message'}) if card_div is not None else None
-  message_text = message_div.text if message_div is not None else None
-
-  date_div = card_div.find('div', {'class': 'field-highfivedate'}) if card_div is not None else None
-  date_text = date_div.text if date_div is not None else None
-
-  firstname_div = card_div.find('div', {'class': 'field-firstname'}) if card_div is not None else None
-  firstname_text = firstname_div.text if firstname_div is not None else None
-
-  return {
-    'id': i['Id'],
-    'date': parse_date(sanitize_string(date_text)),
-    'name': sanitize_string(firstname_text),
-    'community': sanitize_string(community_text),
-    'message': sanitize_string(message_text)
-  }
 
 def high_five_has_name_of_interest(high_five):
   for name in NAMES_OF_INTEREST_LOWERCASE:
@@ -166,7 +125,7 @@ def get_all_high_fives():
 
     current_offset += BATCH_SIZE
 
-    high_fives_batch = list(map(parse_high_five, response_data['Results']))
+    high_fives_batch = list(map(HighFiveParser.parse_high_five, response_data['Results']))
     high_fives_batch = list(filter(lambda high_five:high_five['message'] is not None, high_fives_batch))
 
     all_high_fives += high_fives_batch
@@ -206,21 +165,8 @@ def sort_person_in_community_counts(person_counts):
 
   return sorted_person_counts
 
-def stringify_high_five_components(high_five):
-  components = [
-    f"Date: {high_five['date'].strftime('%b %-d, %Y')}" if high_five['date'] is not None else None,
-    f"From: {high_five['name']}" if high_five['name'] is not None else None,
-    f"Community: {high_five['community']}" if high_five['community'] is not None else None,
-    f"Message: {high_five['message']}"
-  ]
-
-  return filter(None, components)
-
-def stringify_high_five(high_five):
-  return "\n".join(stringify_high_five_components(high_five))
-
 def email_high_fives(high_fives):
-  body_text = "\n\n".join(map(stringify_high_five, high_fives))
+  body_text = "\n\n".join(map(HighFiveParser.stringify_high_five, high_fives))
 
   subject_line = SUBJECT_LINE_SINGULAR
 
@@ -250,7 +196,7 @@ def email_high_fives(high_fives):
     raise
 
 def log_high_five(high_five):
-  high_five_components = stringify_high_five_components(high_five)
+  high_five_components = HighFiveParser.stringify_high_five_components(high_five)
 
   for component in high_five_components:
     logger.info(component)
