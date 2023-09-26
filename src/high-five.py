@@ -10,7 +10,6 @@ from botocore.exceptions import ClientError
 import logging
 import sys
 import json
-import spacy
 
 from highfiveparser import HighFiveParser
 from confighelper import ConfigHelper
@@ -64,8 +63,9 @@ COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
 
 ses = boto3.client('ses', region_name=AWS_REGION)
 
-# Load English tokenizer, tagger, parser and NER
-#nlp = spacy.load("en_core_web_sm") # Take this out while unused, to save startup time
+#
+# Helper functions
+#
 
 def high_five_has_name_of_interest(high_five):
   for name in NAMES_OF_INTEREST_LOWERCASE:
@@ -75,16 +75,6 @@ def high_five_has_name_of_interest(high_five):
         return True
 
   return False
-
-def get_all_people_from_high_five(high_five):
-  document = nlp(high_five['message'])
-
-  person_entities = list(filter(lambda entity:entity.label_ == 'PERSON', document.ents))
-  person_names = list(map(lambda entity:entity.text, person_entities))
-
-  person_names_deduplicated = list(set(person_names))
-
-  return person_names_deduplicated
 
 def get_all_high_fives():
   retries = Retry(total=NUM_RETRIES, backoff_factor=RETRY_BACKOFF_FACTOR)
@@ -135,36 +125,6 @@ def get_all_high_fives():
 
   return all_high_fives
 
-def get_person_in_community_counts(high_fives):
-  person_counts = {}
-
-  for high_five in all_high_fives:
-    new_people = get_all_people_from_high_five(high_five)
-
-    if len(new_people) == 0:
-      continue
-
-    community = high_five['community']
-
-    if community not in person_counts:
-      person_counts[community] = {}
-
-    for person in new_people:
-      if person not in person_counts[community]:
-        person_counts[community][person] = 1
-      else:
-        person_counts[community][person] += 1
-  
-  return person_counts
-
-def sort_person_in_community_counts(person_counts):
-  sorted_person_counts = {}
-
-  for community in person_counts.keys():
-    sorted_person_counts[community] = dict(sorted(person_counts[community].items(), key=lambda x: x[1], reverse=True))    
-
-  return sorted_person_counts
-
 def email_high_fives(high_fives):
   body_text = "\n\n".join(map(HighFiveParser.stringify_high_five, high_fives))
 
@@ -207,16 +167,6 @@ def get_new_high_fives_and_send_email(event, context):
   all_high_fives = get_all_high_fives()
 
   interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
-
-  '''
-  person_counts = get_person_in_community_counts(all_high_fives)
-  sorted_person_counts = sort_person_in_community_counts(person_counts)
-
-  for community, person_counts in sorted_person_counts.items():
-    print("\n")
-    for person_name, count in person_counts.items():
-      print(f"Name: {person_name}, Community: {community} Total high fives: {count}")
-  '''
 
   logger.info(f"Found {len(interesting_high_fives)} interesting high fives")
   for high_five in interesting_high_fives:
