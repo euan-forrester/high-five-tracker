@@ -47,6 +47,27 @@ resource "aws_ssm_parameter" "aws_region" {
   value       = var.region
 }
 
+resource "aws_ssm_parameter" "run_at_script_startup" {
+  name        = "/${var.application_name}/${var.environment}/run-at-script-startup"
+  description = "Whether to run our check when the script first starts (or wait for Lambda to call the entrypoint)"
+  type        = "String"
+  value       = var.run_at_script_startup
+}
+
+resource "aws_ssm_parameter" "check_database" {
+  name        = "/${var.application_name}/${var.environment}/check-database"
+  description = "Whether to check the database to get the High Five where we last left off"
+  type        = "String"
+  value       = var.check_database
+}
+
+resource "aws_ssm_parameter" "send_email" {
+  name        = "/${var.application_name}/${var.environment}/send-email"
+  description = "Whether to send an email with all of the interesting High Fives we found"
+  type        = "String"
+  value       = var.send_email
+}
+
 resource "aws_ssm_parameter" "subject_line_singular" {
   name        = "/${var.application_name}/${var.environment}/subject-line-singular"
   description = "Subject line to use when sending one High Fave"

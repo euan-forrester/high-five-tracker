@@ -68,6 +68,16 @@ class ConfigHelperFile(ConfigHelper):
         except configparser.NoOptionError as e:
             raise ParameterNotFoundException(message=f'Could not get parameter {key}') from e
 
+    # This will throw a ValueError if the parameter doesn't contain an boolean
+    def getBool(self, key, is_secret=False):
+        try:
+            value = self.config.getboolean(self.environment, key)
+            ConfigHelper._log(key, value, is_secret)
+            return value
+
+        except configparser.NoOptionError as e:
+            raise ParameterNotFoundException(message=f'Could not get parameter {key}') from e
+
     # This will throw a ValueError if the parameter doesn't contain a float
     def getFloat(self, key, is_secret=False):
         try:
@@ -132,6 +142,18 @@ class ConfigHelperParameterStore(ConfigHelper):
     # This will throw a ValueError if the parameter doesn't contain an int
     def getInt(self, key, is_secret=False):
         return int(self.get(key, is_secret))
+
+    # This will throw a ValueError if the parameter doesn't contain an boolean
+    # Recognizes the same strings as ConfigParser above: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.getboolean
+    def getBool(self, key, is_secret=False):
+        value = self.get(key, is_secret)
+        if value.lower() in ["true", "on", "yes", "1"]:
+            return True
+
+        if value.lower() in ["false", "off", "no", "0"]:
+            return False
+
+        raise configparser.ValueError(message=f'Could not get boolean value from {value}')
 
     # This will throw a ValueError if the parameter doesn't contain an int
     def getFloat(self, key, is_secret=False):
