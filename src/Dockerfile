@@ -9,12 +9,13 @@ FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.9
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
 RUN  pip3 install -r requirements.txt
 
-RUN mkdir ${LAMBDA_TASK_ROOT}/config
+RUN mkdir -p ${LAMBDA_TASK_ROOT}/common
 
 # Copy function code
 COPY high-five.py ${LAMBDA_TASK_ROOT}
-COPY confighelper.py ${LAMBDA_TASK_ROOT}
 COPY highfiveparser.py ${LAMBDA_TASK_ROOT}
+COPY common/confighelper.py ${LAMBDA_TASK_ROOT}/common/
+COPY common/metricshelper.py ${LAMBDA_TASK_ROOT}/common/
 
 RUN chmod +x ${LAMBDA_TASK_ROOT}/high-five.py
 

@@ -57,6 +57,13 @@ resource "aws_iam_role" "iam_for_lambda" {
       }
     },
     {
+      "Action": [
+        "cloudwatch:PutMetricData"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
       "Sid": "SQSDeadLetterAccessPolicy",
       "Effect": "Allow",
       "Action": [
