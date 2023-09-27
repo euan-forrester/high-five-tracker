@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 import logging
 import sys
 import json
+from datetime import date
 
 from highfiveparser import HighFiveParser
 from confighelper import ConfigHelper
@@ -45,6 +46,9 @@ COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
 
 RUN_AT_SCRIPT_STARTUP   = config_helper.getBool("run-at-script-startup")
 
+METRICS_NAMESPACE       = config_helper.get("metrics-namespace")
+SEND_METRICS            = config_helper.getBool("send-metrics")
+
 CHECK_DATABASE          = config_helper.getBool("check-database")
 
 SEND_EMAIL              = config_helper.getBool("send-email")
@@ -62,6 +66,7 @@ COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
 #
 
 ses = boto3.client('ses', region_name=AWS_REGION)
+cloudwatch = boto3.client('cloudwatch')
 
 #
 # Helper functions
@@ -165,6 +170,24 @@ def email_high_fives(high_fives):
     logger.exception("Could not send mail from %s to %s.", FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS)
     raise
 
+def calculate_metrics(high_fives):
+  logger.info("*** Metrics information ***")
+  num_high_fives_found = len(high_fives)
+
+  logger.info(f"Found {num_high_fives_found} total High Fives")
+
+  if num_high_fives_found == 0:
+    logger.info("No high fives found, so no further telemetry can be sent")
+    return
+
+  most_recent_high_five = high_fives[0]
+
+  if most_recent_high_five['date'] is None:
+    logger.info(f"No date found in High Five {most_recent_high_five['id']} so can't send telemetry about its age")
+  else:
+    most_recent_high_five_age_days = (date.today() - most_recent_high_five['date']).days
+    logger.info(f"Most recent High Five found is {most_recent_high_five_age_days} days old")    
+
 def log_high_five(high_five):
   high_five_components = HighFiveParser.stringify_high_five_components(high_five)
 
@@ -185,6 +208,8 @@ def get_new_high_fives_and_send_email(event, context):
 
   if SEND_EMAIL:
     email_high_fives(interesting_high_fives)
+
+  calculate_metrics(all_high_fives)
 
 if RUN_AT_SCRIPT_STARTUP:
   get_new_high_fives_and_send_email(None, None)

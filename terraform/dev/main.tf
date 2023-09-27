@@ -10,6 +10,9 @@ module "lambda" {
   run_at_script_startup   = false
   check_database          = true
 
+  metrics_namespace       = "${var.application_name}-${var.environment}"
+  send_metrics            = true
+
   send_email              = true
   system_email            = var.system_email
   subject_line_singular   = var.subject_line_singular

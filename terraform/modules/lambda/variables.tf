@@ -13,6 +13,12 @@ variable "run_at_script_startup" {
 variable "check_database" {
 }
 
+variable "send_metrics" {
+}
+
+variable "metrics_namespace" {
+}
+
 variable "send_email" {
 }
 

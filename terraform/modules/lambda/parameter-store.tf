@@ -61,6 +61,20 @@ resource "aws_ssm_parameter" "check_database" {
   value       = var.check_database
 }
 
+resource "aws_ssm_parameter" "send_metrics" {
+  name        = "/${var.application_name}/${var.environment}/send-metrics"
+  description = "Whether to send cloudwatch metrics"
+  type        = "String"
+  value       = var.send_metrics
+}
+
+resource "aws_ssm_parameter" "metrics_namespace" {
+  name        = "/${var.application_name}/${var.environment}/metrics-namespace"
+  description = "Namespace for cloudwatch metrics"
+  type        = "String"
+  value       = var.metrics_namespace
+}
+
 resource "aws_ssm_parameter" "send_email" {
   name        = "/${var.application_name}/${var.environment}/send-email"
   description = "Whether to send an email with all of the interesting High Fives we found"
