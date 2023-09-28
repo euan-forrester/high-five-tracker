@@ -7,16 +7,16 @@ variable "region" {
 variable "application_name" {
 }
 
-variable "run_at_script_startup" {
-}
-
 variable "check_database" {
 }
 
-variable "send_email" {
+variable "send_metrics" {
 }
 
-variable "system_email" {
+variable "metrics_namespace" {
+}
+
+variable "send_email" {
 }
 
 variable "subject_line_singular" {

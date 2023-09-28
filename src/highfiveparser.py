@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import re
+from datetime import date
 from datetime import datetime
 
 def sanitize_string(s):
@@ -14,7 +15,7 @@ def parse_date(s):
   if s is None:
     return None
 
-  return datetime.strptime(s, '%b %d, %Y') # Example date is 'Apr 27, 2023'
+  return datetime.strptime(s, '%b %d, %Y').date() # Example date is 'Apr 27, 2023'
 
 class HighFiveParser:
   

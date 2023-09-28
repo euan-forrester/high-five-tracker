@@ -7,8 +7,10 @@ module "lambda" {
   
   num_days_to_keep_images = 30
 
-  run_at_script_startup   = false
   check_database          = true
+  
+  metrics_namespace       = var.application_name}
+  send_metrics            = true
 
   send_email              = true
   system_email            = var.system_email

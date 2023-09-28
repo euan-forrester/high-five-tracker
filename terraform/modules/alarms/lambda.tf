@@ -1,4 +1,6 @@
 resource "aws_cloudwatch_metric_alarm" "eventbridge_failedinvocations" {
+  count = var.enable_alarms ? 1 : 0 # Don't create this if we turn off alarms (e.g. for dev)
+
   alarm_name                = "${var.application_name} EventBridge FailedInvocations - ${var.environment}"
   comparison_operator       = "GreaterThanOrEqualToThreshold"
   evaluation_periods        = "1"
@@ -14,12 +16,14 @@ resource "aws_cloudwatch_metric_alarm" "eventbridge_failedinvocations" {
   ok_actions                = [aws_sns_topic.alarms.arn]
 
   dimensions = {
-    RuleName = aws_cloudwatch_event_rule.cron.name
+    RuleName = var.cloudwatch_event_rule_cron_name
   }
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_dead_letter_queue_items" {
-  alarm_name                = "${aws_sqs_queue.lambda_dead_letter_queue.name} items"
+  count = var.enable_alarms ? 1 : 0 # Don't create this if we turn off alarms (e.g. for dev)
+
+  alarm_name                = "${var.lamdba_dead_letter_queue_name} items"
   comparison_operator       = "GreaterThanOrEqualToThreshold"
   evaluation_periods        = "1"
   metric_name               = "ApproximateNumberOfMessagesVisible"
@@ -34,6 +38,6 @@ resource "aws_cloudwatch_metric_alarm" "lambda_dead_letter_queue_items" {
   ok_actions                = [aws_sns_topic.alarms.arn]
 
   dimensions = {
-    QueueName = aws_sqs_queue.lambda_dead_letter_queue.name
+    QueueName = var.lamdba_dead_letter_queue_name
   }
 }

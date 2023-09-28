@@ -57,6 +57,13 @@ resource "aws_iam_role" "iam_for_lambda" {
       }
     },
     {
+      "Action": [
+        "cloudwatch:PutMetricData"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
       "Sid": "SQSDeadLetterAccessPolicy",
       "Effect": "Allow",
       "Action": [
@@ -64,16 +71,6 @@ resource "aws_iam_role" "iam_for_lambda" {
       ],
       "Resource": [
         "${aws_sqs_queue.lambda_dead_letter_queue.arn}"
-      ]
-    },
-    {
-      "Sid": "SNSBucketIdentity",
-      "Effect": "Allow",
-      "Action": [
-        "sns:Publish"
-      ],
-      "Resource": [
-        "${aws_sns_topic.alarms.arn}"
       ]
     }
   ]
@@ -98,7 +95,7 @@ resource "aws_lambda_function" "high_fives" {
   role = aws_iam_role.iam_for_lambda.arn
   publish = true
   timeout = 20 # Normally takes about 5-6 seconds to run, and 3-4 seconds to start up
-  memory_size = 512 # Normally takes about 220MB
+  memory_size = 256 # Normally takes about 80MB
 
   environment {
     variables = {
@@ -124,10 +121,6 @@ resource "aws_lambda_function_event_invoke_config" "high_fives" {
   destination_config {
     on_failure {
       destination = aws_sqs_queue.lambda_dead_letter_queue.arn
-    }
-
-    on_success {
-      destination = aws_sns_topic.alarms.arn
     }
   }
 }

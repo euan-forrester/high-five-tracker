@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import sys
+sys.path.insert(0, './common')
+
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -10,9 +13,11 @@ from botocore.exceptions import ClientError
 import logging
 import sys
 import json
+from datetime import date
 
 from highfiveparser import HighFiveParser
 from confighelper import ConfigHelper
+from metricshelper import MetricsHelper
 
 #
 # Setup logging
@@ -45,6 +50,9 @@ COMMUNITIES_OF_INTEREST = config_helper.getArray("communities-of-interest")
 
 RUN_AT_SCRIPT_STARTUP   = config_helper.getBool("run-at-script-startup")
 
+METRICS_NAMESPACE       = config_helper.get("metrics-namespace")
+SEND_METRICS            = config_helper.getBool("send-metrics")
+
 CHECK_DATABASE          = config_helper.getBool("check-database")
 
 SEND_EMAIL              = config_helper.getBool("send-email")
@@ -62,6 +70,7 @@ COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
 #
 
 ses = boto3.client('ses', region_name=AWS_REGION)
+metrics_helper = MetricsHelper(environment=config_helper.get_environment(), region=AWS_REGION, metrics_namespace=METRICS_NAMESPACE)
 
 #
 # Helper functions
@@ -160,10 +169,32 @@ def email_high_fives(high_fives):
   try:
     response = ses.send_email(**send_args)
     message_id = response['MessageId']
-    logger.info("Successfully sent mail %s from %s to %s.", message_id, FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS)
+    logger.info(f"Successfully sent mail '{message_id}' from '{FROM_EMAIL_ADDRESS}' to '{TO_EMAIL_ADDRESS}'")
   except ClientError:
-    logger.exception("Could not send mail from %s to %s.", FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS)
+    logger.exception(f"Could not send mail from '{FROM_EMAIL_ADDRESS}' to '{TO_EMAIL_ADDRESS}'")
     raise
+
+def calculate_metrics(high_fives):
+  logger.info("*** Metrics information ***")
+  num_high_fives_found = len(high_fives)
+
+  logger.info(f"Found {num_high_fives_found} total High Fives")
+
+  if num_high_fives_found == 0:
+    logger.info("No high fives found, so no further telemetry can be sent")
+    return
+
+  most_recent_high_five = high_fives[0]
+
+  if most_recent_high_five['date'] is None:
+    logger.info(f"No date found in High Five {most_recent_high_five['id']} so can't send telemetry about its age")
+  else:
+    most_recent_high_five_age_days = (date.today() - most_recent_high_five['date']).days
+    logger.info(f"Most recent High Five found is {most_recent_high_five_age_days} days old")
+
+  if SEND_METRICS:
+    metrics_helper.send_count("total-high-fives", num_high_fives_found)
+    metrics_helper.send_count("most-recent-high-five-age-days", most_recent_high_five_age_days)
 
 def log_high_five(high_five):
   high_five_components = HighFiveParser.stringify_high_five_components(high_five)
@@ -185,6 +216,8 @@ def get_new_high_fives_and_send_email(event, context):
 
   if SEND_EMAIL:
     email_high_fives(interesting_high_fives)
+
+  calculate_metrics(all_high_fives)
 
 if RUN_AT_SCRIPT_STARTUP:
   get_new_high_fives_and_send_email(None, None)

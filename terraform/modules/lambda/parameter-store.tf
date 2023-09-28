@@ -51,7 +51,7 @@ resource "aws_ssm_parameter" "run_at_script_startup" {
   name        = "/${var.application_name}/${var.environment}/run-at-script-startup"
   description = "Whether to run our check when the script first starts (or wait for Lambda to call the entrypoint)"
   type        = "String"
-  value       = var.run_at_script_startup
+  value       = "False" # This option is for running the script locally for testing. When deployed to lambda we never want to do this.
 }
 
 resource "aws_ssm_parameter" "check_database" {
@@ -59,6 +59,20 @@ resource "aws_ssm_parameter" "check_database" {
   description = "Whether to check the database to get the High Five where we last left off"
   type        = "String"
   value       = var.check_database
+}
+
+resource "aws_ssm_parameter" "send_metrics" {
+  name        = "/${var.application_name}/${var.environment}/send-metrics"
+  description = "Whether to send cloudwatch metrics"
+  type        = "String"
+  value       = var.send_metrics
+}
+
+resource "aws_ssm_parameter" "metrics_namespace" {
+  name        = "/${var.application_name}/${var.environment}/metrics-namespace"
+  description = "Namespace for cloudwatch metrics"
+  type        = "String"
+  value       = var.metrics_namespace
 }
 
 resource "aws_ssm_parameter" "send_email" {
