@@ -45,11 +45,17 @@ module "alarms" {
   enable_alarms     = true
 }
 
-#module "dashboard" {
-#  source = "../modules/dashboard"
-#
-#  environment       = var.environment
-#  region            = var.region
-#
-#  application_name  = var.application_name
-#}
+module "dashboard" {
+  source = "../modules/dashboard"
+
+  environment       = var.environment
+  region            = var.region
+
+  application_name  = var.application_name
+  metrics_namespace = module.lambda.metrics_namespace
+
+  cloudwatch_event_rule_cron_name = module.lambda.cloudwatch_event_rule_cron_name
+  lamdba_dead_letter_queue_name   = module.lambda.lamdba_dead_letter_queue_name
+
+  enable_dashboards = true
+}
