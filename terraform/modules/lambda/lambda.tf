@@ -72,16 +72,6 @@ resource "aws_iam_role" "iam_for_lambda" {
       "Resource": [
         "${aws_sqs_queue.lambda_dead_letter_queue.arn}"
       ]
-    },
-    {
-      "Sid": "SNSBucketIdentity",
-      "Effect": "Allow",
-      "Action": [
-        "sns:Publish"
-      ],
-      "Resource": [
-        "${aws_sns_topic.alarms.arn}"
-      ]
     }
   ]
 }
@@ -131,10 +121,6 @@ resource "aws_lambda_function_event_invoke_config" "high_fives" {
   destination_config {
     on_failure {
       destination = aws_sqs_queue.lambda_dead_letter_queue.arn
-    }
-
-    on_success {
-      destination = aws_sns_topic.alarms.arn
     }
   }
 }

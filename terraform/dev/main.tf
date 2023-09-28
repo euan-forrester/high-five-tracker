@@ -7,14 +7,12 @@ module "lambda" {
 
   num_days_to_keep_images = 7
   
-  run_at_script_startup   = false
   check_database          = true
 
   metrics_namespace       = var.application_name
   send_metrics            = true
 
   send_email              = true
-  system_email            = var.system_email
   subject_line_singular   = var.subject_line_singular
   subject_line_plural     = var.subject_line_plural
   to_email                = var.to_email
@@ -29,3 +27,27 @@ module "lambda" {
   num_retries             = 3
   retry_backoff_factor    = 0.5
 }
+
+module "alarms" {
+  source = "../modules/alarms"
+
+  environment       = var.environment
+  region            = var.region
+
+  application_name  = var.application_name
+  system_email      = var.system_email
+
+  cloudwatch_event_rule_cron_name = module.lambda.cloudwatch_event_rule_cron_name
+  lamdba_dead_letter_queue_name   = module.lambda.lamdba_dead_letter_queue_name
+
+  enable_alarms     = true
+}
+
+#module "dashboard" {
+#  source = "../modules/dashboard"
+#
+#  environment       = var.environment
+#  region            = var.region
+#
+#  application_name  = var.application_name
+#}

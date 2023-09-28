@@ -51,7 +51,7 @@ resource "aws_ssm_parameter" "run_at_script_startup" {
   name        = "/${var.application_name}/${var.environment}/run-at-script-startup"
   description = "Whether to run our check when the script first starts (or wait for Lambda to call the entrypoint)"
   type        = "String"
-  value       = var.run_at_script_startup
+  value       = "False" # This option is for running the script locally for testing. When deployed to lambda we never want to do this.
 }
 
 resource "aws_ssm_parameter" "check_database" {
