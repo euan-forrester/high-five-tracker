@@ -37,6 +37,8 @@ module "alarms" {
   application_name  = var.application_name
   system_email      = var.system_email
 
+  metrics_namespace = module.lambda.metrics_namespace
+
   cloudwatch_event_rule_cron_name = module.lambda.cloudwatch_event_rule_cron_name
   lamdba_dead_letter_queue_name   = module.lambda.lamdba_dead_letter_queue_name
 
