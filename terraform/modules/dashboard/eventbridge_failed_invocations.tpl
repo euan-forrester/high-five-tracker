@@ -9,7 +9,7 @@
         ]
     ],
     "period":300,
-    "stat":"Sum",
+    "stat":"Maximum",
     "region":"${region}",
     "title":"EventBridge cron failed invocations"
 }

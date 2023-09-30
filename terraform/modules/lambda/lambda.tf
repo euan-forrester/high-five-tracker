@@ -91,7 +91,7 @@ resource "aws_lambda_function" "high_fives" {
   image_uri = "${aws_ecr_repository.high_fives.repository_url}:latest"
   architectures = ["x86_64"]
   package_type = "Image"
-  function_name = var.lambda_function_name
+  function_name = "${var.lambda_function_name}-${var.environment}"
   role = aws_iam_role.iam_for_lambda.arn
   publish = true
   timeout = 20 # Normally takes about 5-6 seconds to run, and 3-4 seconds to start up
@@ -136,7 +136,7 @@ resource "aws_sqs_queue" "lambda_dead_letter_queue" {
 # Lambda function automatically write to cloudwatch logs if we give them permission
 
 resource "aws_cloudwatch_log_group" "high_five_logs" {
-  name              = "/aws/lambda/${var.lambda_function_name}"
+  name              = "/aws/lambda/${var.lambda_function_name}-${var.environment}"
   retention_in_days = 14
 }
 
