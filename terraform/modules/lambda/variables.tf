@@ -7,7 +7,7 @@ variable "region" {
 variable "application_name" {
 }
 
-variable "check_database" {
+variable "set_most_recent_high_five_id" {
 }
 
 variable "send_metrics" {

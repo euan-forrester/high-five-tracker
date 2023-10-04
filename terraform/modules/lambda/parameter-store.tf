@@ -54,11 +54,11 @@ resource "aws_ssm_parameter" "run_at_script_startup" {
   value       = "False" # This option is for running the script locally for testing. When deployed to lambda we never want to do this.
 }
 
-resource "aws_ssm_parameter" "check_database" {
-  name        = "/${var.application_name}/${var.environment}/check-database"
-  description = "Whether to check the database to get the High Five where we last left off"
+resource "aws_ssm_parameter" "set_most_recent_high_five_id" {
+  name        = "/${var.application_name}/${var.environment}/set-most-recent-high-five-id"
+  description = "Whether to set the most recent High Five ID encountered during this invocation of the lambda function"
   type        = "String"
-  value       = var.check_database
+  value       = var.set_most_recent_high_five_id
 }
 
 resource "aws_ssm_parameter" "send_metrics" {

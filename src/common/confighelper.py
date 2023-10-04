@@ -26,6 +26,10 @@ class ConfigHelper:
         logging.info(f"Got parameter {param} with value {ConfigHelper._get_value_log_string(value, is_secret)}")
 
     @staticmethod
+    def _log_set(param, value, is_secret, cache_type="none"):
+        logging.info(f"Set parameter {param} with value {ConfigHelper._get_value_log_string(value, is_secret)}")
+
+    @staticmethod
     def _get_value_log_string(value, is_secret):
         if is_secret:
             return "<secret>"
@@ -48,6 +52,14 @@ class ConfigHelperFile(ConfigHelper):
 
     def get_environment(self):
         return self.environment
+
+    def set(self, key, value, is_secret=False):
+        try:
+            self.config.set(self.environment, key, value)
+            ConfigHelper._log_set(key, value, is_secret)
+
+        except configparser.NoOptionError as e:
+            raise ParameterNotFoundException(message=f'Could not set parameter {key}') from e        
 
     def get(self, key, is_secret=False):
         try:
@@ -122,6 +134,16 @@ class ConfigHelperParameterStore(ConfigHelper):
 
         return value
 
+    def set(self, key, value, is_secret=False):
+
+        full_path = self._get_full_path(key)
+
+        self._set_in_parameter_store(full_path, value, is_secret)
+
+        ConfigHelper._log_set(key, value, is_secret)
+
+        return value
+
     def _get_from_parameter_store(self, full_path, is_secret=False):
         
         try:
@@ -132,6 +154,20 @@ class ConfigHelperParameterStore(ConfigHelper):
 
             if error_code == "ParameterNotFound":
                 raise ParameterNotFoundException(message=f'Could not get parameter {full_path}: {error_code}') from e
+            else:
+                # Something else bad happened; better just let it through
+                raise
+
+    def _set_in_parameter_store(self, full_path, value, is_secret=False):
+        
+        try:
+            return self.ssm.put_parameter(Name=full_path, Value=value, Overwrite=True)
+
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+
+            if error_code == "ParameterNotFound":
+                raise ParameterNotFoundException(message=f'Could not set parameter {full_path}: {error_code}') from e
             else:
                 # Something else bad happened; better just let it through
                 raise

@@ -53,7 +53,8 @@ RUN_AT_SCRIPT_STARTUP   = config_helper.getBool("run-at-script-startup")
 METRICS_NAMESPACE       = config_helper.get("metrics-namespace")
 SEND_METRICS            = config_helper.getBool("send-metrics")
 
-CHECK_DATABASE          = config_helper.getBool("check-database")
+SET_MOST_RECENT_HIGH_FIVE_ID      = config_helper.getBool("set-most-recent-high-five-id")
+PREVIOUS_MOST_RECENT_HIGH_FIVE_ID = config_helper.get("previous-most-recent-high-five-id")
 
 SEND_EMAIL              = config_helper.getBool("send-email")
 SUBJECT_LINE_SINGULAR   = config_helper.get("subject-line-singular")
@@ -218,6 +219,9 @@ def get_new_high_fives_and_send_email(event, context):
     email_high_fives(interesting_high_fives)
 
   calculate_metrics(all_high_fives)
+
+  if SET_MOST_RECENT_HIGH_FIVE_ID and (len(all_high_fives) > 0):
+    config_helper.set("previous-most-recent-high-five-id", all_high_fives[0]['id'])
 
 if RUN_AT_SCRIPT_STARTUP:
   get_new_high_fives_and_send_email(None, None)

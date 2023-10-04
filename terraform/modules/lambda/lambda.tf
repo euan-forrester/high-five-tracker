@@ -37,7 +37,8 @@ resource "aws_iam_role" "iam_for_lambda" {
       "Sid": "SSMParameterAccessPolicy",
       "Effect": "Allow",
       "Action": [
-        "ssm:GetParameter"
+        "ssm:GetParameter",
+        "ssm:PutParameter"
       ],
       "Resource": [
         "arn:aws:ssm:*:${data.aws_caller_identity.lambda.account_id}:parameter/${var.application_name}/${var.environment}/*"
