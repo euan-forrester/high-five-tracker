@@ -7,6 +7,8 @@ module "lambda" {
   
   num_days_to_keep_images = 30
 
+  cron_expression         = "cron(0 16 * * ? *)"  # Run every day at 4:00 PM UTC = 9:00 AM PDT or 8:00 AM PST
+
   check_database          = true
   
   metrics_namespace       = var.application_name}

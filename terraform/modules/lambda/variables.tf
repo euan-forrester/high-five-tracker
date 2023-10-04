@@ -54,3 +54,6 @@ variable "retry_backoff_factor" {
 
 variable "num_days_to_keep_images" {
 }
+
+variable "cron_expression" {
+}
