@@ -119,3 +119,19 @@ resource "aws_ssm_parameter" "from_email" {
   type        = "String"
   value       = var.from_email
 }
+
+# We're going to use this as external storage, to persist the most recent ID encountered between invocations of our lamdba function
+# So, ignore changes to the value of this parameter
+resource "aws_ssm_parameter" "previous_most_recent_high_five_id" {
+  name        = "/${var.application_name}/${var.environment}/previous-most-recent-high-five-id"
+  description = "The ID of the most recent High Five ID encountered on the previous run of the lambda expression"
+  type        = "String"
+  value       = "dummy"
+
+  lifecycle {
+    ignore_changes = [
+      value,
+    ]
+  }
+}
+
