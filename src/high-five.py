@@ -14,6 +14,7 @@ import logging
 import sys
 import json
 from datetime import date
+from itertools import takewhile
 
 from highfiveparser import HighFiveParser
 from confighelper import ConfigHelper
@@ -175,17 +176,19 @@ def email_high_fives(high_fives):
     logger.exception(f"Could not send mail from '{FROM_EMAIL_ADDRESS}' to '{TO_EMAIL_ADDRESS}'")
     raise
 
-def calculate_metrics(high_fives):
+def calculate_metrics(all_high_fives, new_high_fives):
   logger.info("*** Metrics information ***")
-  num_high_fives_found = len(high_fives)
+  num_high_fives_found = len(all_high_fives)
+  num_new_high_fives_found = len(new_high_fives)
 
   logger.info(f"Found {num_high_fives_found} total High Fives")
+  logger.info(f"Found {num_new_high_fives_found} new High Fives")
 
   if num_high_fives_found == 0:
     logger.info("No high fives found, so no further telemetry can be sent")
     return
 
-  most_recent_high_five = high_fives[0]
+  most_recent_high_five = all_high_fives[0]
 
   if most_recent_high_five['date'] is None:
     logger.info(f"No date found in High Five {most_recent_high_five['id']} so can't send telemetry about its age")
@@ -196,6 +199,7 @@ def calculate_metrics(high_fives):
   if SEND_METRICS:
     metrics_helper.send_count("total-high-fives", num_high_fives_found)
     metrics_helper.send_count("most-recent-high-five-age-days", most_recent_high_five_age_days)
+    metrics_helper.send_count("new-high-fives", num_new_high_fives_found)
 
 def log_high_five(high_five):
   high_five_components = HighFiveParser.stringify_high_five_components(high_five)
@@ -208,7 +212,11 @@ def get_new_high_fives_and_send_email(event, context):
 
   all_high_fives = get_all_high_fives()
 
-  interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
+  new_high_fives = list(takewhile(lambda high_five:high_five['id'] != PREVIOUS_MOST_RECENT_HIGH_FIVE_ID, all_high_fives))
+
+  logger.info(f"Found {len(new_high_fives)} new high fives")
+
+  interesting_high_fives = list(filter(high_five_has_name_of_interest, new_high_fives))
 
   logger.info(f"Found {len(interesting_high_fives)} interesting high fives")
   for high_five in interesting_high_fives:
@@ -218,7 +226,7 @@ def get_new_high_fives_and_send_email(event, context):
   if SEND_EMAIL:
     email_high_fives(interesting_high_fives)
 
-  calculate_metrics(all_high_fives)
+  calculate_metrics(all_high_fives, new_high_fives)
 
   if SET_MOST_RECENT_HIGH_FIVE_ID and (len(all_high_fives) > 0):
     config_helper.set("previous-most-recent-high-five-id", all_high_fives[0]['id'])
