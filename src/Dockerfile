@@ -16,6 +16,7 @@ COPY high-five.py ${LAMBDA_TASK_ROOT}
 COPY highfiveparser.py ${LAMBDA_TASK_ROOT}
 COPY common/confighelper.py ${LAMBDA_TASK_ROOT}/common/
 COPY common/metricshelper.py ${LAMBDA_TASK_ROOT}/common/
+COPY common/emailhelper.py ${LAMBDA_TASK_ROOT}/common/
 
 RUN chmod +x ${LAMBDA_TASK_ROOT}/high-five.py
 

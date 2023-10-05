@@ -7,9 +7,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-import boto3
-from botocore.exceptions import ClientError
-
 import logging
 import sys
 import json
@@ -19,6 +16,7 @@ from itertools import takewhile
 from highfiveparser import HighFiveParser
 from confighelper import ConfigHelper
 from metricshelper import MetricsHelper
+from emailhelper import EmailHelper
 
 #
 # Setup logging
@@ -71,7 +69,7 @@ COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
 # Init AWS stuff
 #
 
-ses = boto3.client('ses', region_name=AWS_REGION)
+email_helper   = EmailHelper(region=AWS_REGION)
 metrics_helper = MetricsHelper(environment=config_helper.get_environment(), region=AWS_REGION, metrics_namespace=METRICS_NAMESPACE)
 
 #
@@ -154,27 +152,7 @@ def email_high_fives(high_fives):
   if len(high_fives) > 1:
     subject_line = SUBJECT_LINE_PLURAL.format(len(high_fives))
 
-  # Object structure described at https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ses/client/send_email.html#
-  send_args = {
-    'Source': FROM_EMAIL_ADDRESS,
-    'Destination': {
-      'ToAddresses': [TO_EMAIL_ADDRESS],
-    },
-    'Message': {
-      'Subject': {'Data': subject_line},
-      'Body': {'Text': {'Data': body_text}}
-    }
-  }
-  if CC_EMAIL_ADDRESS is not None:
-    send_args['Destination']['CcAddresses'] = [CC_EMAIL_ADDRESS]
-
-  try:
-    response = ses.send_email(**send_args)
-    message_id = response['MessageId']
-    logger.info(f"Successfully sent mail '{message_id}' from '{FROM_EMAIL_ADDRESS}' to '{TO_EMAIL_ADDRESS}'")
-  except ClientError:
-    logger.exception(f"Could not send mail from '{FROM_EMAIL_ADDRESS}' to '{TO_EMAIL_ADDRESS}'")
-    raise
+  email_helper.send_email(FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS, CC_EMAIL_ADDRESS, subject_line, body_text)
 
 def calculate_metrics(all_high_fives, new_high_fives):
   logger.info("*** Metrics information ***")
@@ -224,7 +202,10 @@ def get_new_high_fives_and_send_email(event, context):
     log_high_five(high_five)
 
   if SEND_EMAIL:
-    email_high_fives(interesting_high_fives)
+    if len(interesting_high_fives) > 0:
+      email_high_fives(interesting_high_fives)
+    else:
+      logger.info("No interesting high fives found, so not sending email")
 
   calculate_metrics(all_high_fives, new_high_fives)
 
