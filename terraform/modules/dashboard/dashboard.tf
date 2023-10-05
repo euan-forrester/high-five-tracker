@@ -3,8 +3,12 @@ resource "aws_cloudwatch_dashboard" "main" {
 
   dashboard_name = "${var.application_name}-${var.environment}"
 
+  # Formet described here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Dashboard-Body-Structure.html
+  # Although the docs say that you can use D or W when specifying "start" below, I found that only H worked
   dashboard_body = <<EOF
   {
+    "start": "-PT336H",
+    "periodOverride": "inherit",
     "widgets": [
        {
           "x":0,
@@ -16,9 +20,16 @@ resource "aws_cloudwatch_dashboard" "main" {
        {
           "x":0,
           "y":6,
-          "width":24,
+          "width":12,
           "height":6,
           ${data.template_file.total_high_fives.rendered}
+       },
+       {
+          "x":12,
+          "y":6,
+          "width":12,
+          "height":6,
+          ${data.template_file.new_high_fives.rendered}
        },
        {
           "x":0,
@@ -59,6 +70,16 @@ data "template_file" "total_high_fives" {
   }
 
   template = file("${path.module}/total_high_fives.tpl")
+}
+
+data "template_file" "new_high_fives" {
+  vars = {
+    metrics_namespace = var.metrics_namespace
+    environment       = var.environment
+    region            = var.region
+  }
+
+  template = file("${path.module}/new_high_fives.tpl")
 }
 
 data "template_file" "eventbridge_failed_invocations" {

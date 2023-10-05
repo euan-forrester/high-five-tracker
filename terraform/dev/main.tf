@@ -6,8 +6,11 @@ module "lambda" {
   application_name        = var.application_name
 
   num_days_to_keep_images = 7
+
+  cron_expression         = "cron(0 16 * * ? *)"  # Run every day at 4:00 PM UTC = 9:00 AM PDT or 8:00 AM PST
+  #cron_expression         = "cron(*/5 * * * ? *)"  # Run every 5 minutes for testing
   
-  check_database          = true
+  set_most_recent_high_five_id = true
 
   metrics_namespace       = var.application_name
   send_metrics            = true

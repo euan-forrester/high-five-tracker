@@ -7,17 +7,16 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-import boto3
-from botocore.exceptions import ClientError
-
 import logging
 import sys
 import json
 from datetime import date
+from itertools import takewhile
 
 from highfiveparser import HighFiveParser
 from confighelper import ConfigHelper
 from metricshelper import MetricsHelper
+from emailhelper import EmailHelper
 
 #
 # Setup logging
@@ -53,7 +52,7 @@ RUN_AT_SCRIPT_STARTUP   = config_helper.getBool("run-at-script-startup")
 METRICS_NAMESPACE       = config_helper.get("metrics-namespace")
 SEND_METRICS            = config_helper.getBool("send-metrics")
 
-CHECK_DATABASE          = config_helper.getBool("check-database")
+SET_MOST_RECENT_HIGH_FIVE_ID = config_helper.getBool("set-most-recent-high-five-id")
 
 SEND_EMAIL              = config_helper.getBool("send-email")
 SUBJECT_LINE_SINGULAR   = config_helper.get("subject-line-singular")
@@ -69,7 +68,7 @@ COMMUNITIES_OF_INTEREST_LOWERCASE = [s.lower() for s in COMMUNITIES_OF_INTEREST]
 # Init AWS stuff
 #
 
-ses = boto3.client('ses', region_name=AWS_REGION)
+email_helper   = EmailHelper(region=AWS_REGION)
 metrics_helper = MetricsHelper(environment=config_helper.get_environment(), region=AWS_REGION, metrics_namespace=METRICS_NAMESPACE)
 
 #
@@ -152,39 +151,21 @@ def email_high_fives(high_fives):
   if len(high_fives) > 1:
     subject_line = SUBJECT_LINE_PLURAL.format(len(high_fives))
 
-  # Object structure described at https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ses/client/send_email.html#
-  send_args = {
-    'Source': FROM_EMAIL_ADDRESS,
-    'Destination': {
-      'ToAddresses': [TO_EMAIL_ADDRESS],
-    },
-    'Message': {
-      'Subject': {'Data': subject_line},
-      'Body': {'Text': {'Data': body_text}}
-    }
-  }
-  if CC_EMAIL_ADDRESS is not None:
-    send_args['Destination']['CcAddresses'] = [CC_EMAIL_ADDRESS]
+  email_helper.send_email(FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS, CC_EMAIL_ADDRESS, subject_line, body_text)
 
-  try:
-    response = ses.send_email(**send_args)
-    message_id = response['MessageId']
-    logger.info(f"Successfully sent mail '{message_id}' from '{FROM_EMAIL_ADDRESS}' to '{TO_EMAIL_ADDRESS}'")
-  except ClientError:
-    logger.exception(f"Could not send mail from '{FROM_EMAIL_ADDRESS}' to '{TO_EMAIL_ADDRESS}'")
-    raise
-
-def calculate_metrics(high_fives):
+def calculate_metrics(all_high_fives, new_high_fives):
   logger.info("*** Metrics information ***")
-  num_high_fives_found = len(high_fives)
+  num_high_fives_found = len(all_high_fives)
+  num_new_high_fives_found = len(new_high_fives)
 
   logger.info(f"Found {num_high_fives_found} total High Fives")
+  logger.info(f"Found {num_new_high_fives_found} new High Fives")
 
   if num_high_fives_found == 0:
     logger.info("No high fives found, so no further telemetry can be sent")
     return
 
-  most_recent_high_five = high_fives[0]
+  most_recent_high_five = all_high_fives[0]
 
   if most_recent_high_five['date'] is None:
     logger.info(f"No date found in High Five {most_recent_high_five['id']} so can't send telemetry about its age")
@@ -195,6 +176,7 @@ def calculate_metrics(high_fives):
   if SEND_METRICS:
     metrics_helper.send_count("total-high-fives", num_high_fives_found)
     metrics_helper.send_count("most-recent-high-five-age-days", most_recent_high_five_age_days)
+    metrics_helper.send_count("new-high-fives", num_new_high_fives_found)
 
 def log_high_five(high_five):
   high_five_components = HighFiveParser.stringify_high_five_components(high_five)
@@ -203,11 +185,19 @@ def log_high_five(high_five):
     logger.info(component)
 
 def get_new_high_fives_and_send_email(event, context):
+
+  # Need to do this at the start of every request, since Lambda doesn't necessarily re-run the entire script for each invocation
+  PREVIOUS_MOST_RECENT_HIGH_FIVE_ID = config_helper.get("previous-most-recent-high-five-id")
+
   # Request all of the high fives and filter out the ones that contain our person and community of interest
 
   all_high_fives = get_all_high_fives()
 
-  interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
+  new_high_fives = list(takewhile(lambda high_five:high_five['id'] != PREVIOUS_MOST_RECENT_HIGH_FIVE_ID, all_high_fives))
+
+  logger.info(f"Found {len(new_high_fives)} new high fives")
+
+  interesting_high_fives = list(filter(high_five_has_name_of_interest, new_high_fives))
 
   logger.info(f"Found {len(interesting_high_fives)} interesting high fives")
   for high_five in interesting_high_fives:
@@ -215,9 +205,16 @@ def get_new_high_fives_and_send_email(event, context):
     log_high_five(high_five)
 
   if SEND_EMAIL:
-    email_high_fives(interesting_high_fives)
+    if len(interesting_high_fives) > 0:
+      email_high_fives(interesting_high_fives)
+    else:
+      logger.info("No interesting high fives found, so not sending email")
 
-  calculate_metrics(all_high_fives)
+  calculate_metrics(all_high_fives, new_high_fives)
+
+  # Be sure to do this last, so that if we have an error earlier (e.g. sending the email) then we won't miss sending out a High Five in a subsequent run
+  if SET_MOST_RECENT_HIGH_FIVE_ID and (len(all_high_fives) > 0):
+    config_helper.set("previous-most-recent-high-five-id", all_high_fives[0]['id'])
 
 if RUN_AT_SCRIPT_STARTUP:
   get_new_high_fives_and_send_email(None, None)

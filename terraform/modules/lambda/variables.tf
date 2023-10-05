@@ -7,7 +7,7 @@ variable "region" {
 variable "application_name" {
 }
 
-variable "check_database" {
+variable "set_most_recent_high_five_id" {
 }
 
 variable "send_metrics" {
@@ -53,4 +53,7 @@ variable "retry_backoff_factor" {
 }
 
 variable "num_days_to_keep_images" {
+}
+
+variable "cron_expression" {
 }
