@@ -50,12 +50,7 @@ resource "aws_iam_role" "iam_for_lambda" {
       "Action": [
         "ses:SendEmail"
       ],
-      "Resource": "*",
-      "Condition": {
-        "StringLike": {
-          "ses:FromAddress":"${var.from_email}"
-        }
-      }
+      "Resource": "*"
     },
     {
       "Action": [
