@@ -55,6 +55,8 @@ class ConfigHelperFile(ConfigHelper):
 
     def set(self, key, value, is_secret=False):
         try:
+            # This doesn't update the actual .ini file -- it must just update the in-memory store of our config.
+            # It might be better to just do nothing here? Not sure
             self.config.set(self.environment, key, value)
             ConfigHelper._log_set(key, value, is_secret)
 

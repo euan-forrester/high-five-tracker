@@ -228,6 +228,7 @@ def get_new_high_fives_and_send_email(event, context):
 
   calculate_metrics(all_high_fives, new_high_fives)
 
+  # Be sure to do this last, so that if we have an error earlier (e.g. sending the email) then we won't miss sending out a High Five in a subsequent run
   if SET_MOST_RECENT_HIGH_FIVE_ID and (len(all_high_fives) > 0):
     config_helper.set("previous-most-recent-high-five-id", all_high_fives[0]['id'])
 
