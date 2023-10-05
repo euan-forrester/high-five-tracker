@@ -52,8 +52,7 @@ RUN_AT_SCRIPT_STARTUP   = config_helper.getBool("run-at-script-startup")
 METRICS_NAMESPACE       = config_helper.get("metrics-namespace")
 SEND_METRICS            = config_helper.getBool("send-metrics")
 
-SET_MOST_RECENT_HIGH_FIVE_ID      = config_helper.getBool("set-most-recent-high-five-id")
-PREVIOUS_MOST_RECENT_HIGH_FIVE_ID = config_helper.get("previous-most-recent-high-five-id")
+SET_MOST_RECENT_HIGH_FIVE_ID = config_helper.getBool("set-most-recent-high-five-id")
 
 SEND_EMAIL              = config_helper.getBool("send-email")
 SUBJECT_LINE_SINGULAR   = config_helper.get("subject-line-singular")
@@ -186,6 +185,10 @@ def log_high_five(high_five):
     logger.info(component)
 
 def get_new_high_fives_and_send_email(event, context):
+
+  # Need to do this at the start of every request, since Lambda doesn't necessarily re-run the entire script for each invocation
+  PREVIOUS_MOST_RECENT_HIGH_FIVE_ID = config_helper.get("previous-most-recent-high-five-id")
+
   # Request all of the high fives and filter out the ones that contain our person and community of interest
 
   all_high_fives = get_all_high_fives()
