@@ -54,13 +54,6 @@ resource "aws_ssm_parameter" "run_at_script_startup" {
   value       = "False" # This option is for running the script locally for testing. When deployed to lambda we never want to do this.
 }
 
-resource "aws_ssm_parameter" "set_most_recent_high_five_id" {
-  name        = "/${var.application_name}/${var.environment}/set-most-recent-high-five-id"
-  description = "Whether to set the most recent High Five ID encountered during this invocation of the lambda function"
-  type        = "String"
-  value       = var.set_most_recent_high_five_id
-}
-
 resource "aws_ssm_parameter" "send_metrics" {
   name        = "/${var.application_name}/${var.environment}/send-metrics"
   description = "Whether to send cloudwatch metrics"
@@ -120,6 +113,13 @@ resource "aws_ssm_parameter" "from_email" {
   value       = var.from_email
 }
 
+resource "aws_ssm_parameter" "set_most_recent_high_five_id" {
+  name        = "/${var.application_name}/${var.environment}/set-most-recent-high-five-id"
+  description = "Whether to set the most recent High Five ID encountered during this invocation of the lambda function"
+  type        = "String"
+  value       = var.set_most_recent_high_five_id
+}
+
 # We're going to use this as external storage, to persist the most recent ID encountered between invocations of our lamdba function
 # So, ignore changes to the value of this parameter
 resource "aws_ssm_parameter" "previous_most_recent_high_five_id" {
@@ -134,4 +134,3 @@ resource "aws_ssm_parameter" "previous_most_recent_high_five_id" {
     ]
   }
 }
-
