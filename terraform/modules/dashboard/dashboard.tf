@@ -3,6 +3,8 @@ resource "aws_cloudwatch_dashboard" "main" {
 
   dashboard_name = "${var.application_name}-${var.environment}"
 
+  # Formet described here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Dashboard-Body-Structure.html
+  # Although the docs say that you can use D or W when specifying "start" below, I found that only H worked
   dashboard_body = <<EOF
   {
     "start": "-PT336H",
