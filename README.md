@@ -1,6 +1,8 @@
 # high-five-tracker
 
-Fraser Health has a system where patients can leave nice messages called High Fives thanking staff for the care they received. This system is curated and updated periodically by hand. The only issue is that staff members aren't notified when they are the subject of a High Five.
+Fraser Health has a system where patients can leave nice messages called High Fives thanking staff for the care they received: https://www.fraserhealth.ca/highfive
+
+This system is curated and updated periodically by hand. The only issue is that staff members aren't notified when they are the subject of a High Five.
 
 This system runs daily in AWS Lambda and watches for new High Fives and sees if any contain strings matching a list of names provided, and if so sends an email containing those High Fives to the email address provided.
 
