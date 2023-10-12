@@ -9,13 +9,12 @@ module "lambda" {
 
   cron_expression         = "cron(0 16 * * ? *)"  # Run every day at 4:00 PM UTC = 9:00 AM PDT or 8:00 AM PST
 
-  check_database          = true
-  
-  metrics_namespace       = var.application_name}
+  set_most_recent_high_five_id = true
+
+  metrics_namespace       = var.application_name
   send_metrics            = true
 
   send_email              = true
-  system_email            = var.system_email
   subject_line_singular   = var.subject_line_singular
   subject_line_plural     = var.subject_line_plural
   to_email                = var.to_email
@@ -29,4 +28,36 @@ module "lambda" {
   batch_size              = 1000
   num_retries             = 3
   retry_backoff_factor    = 0.5
+}
+
+module "alarms" {
+  source = "../modules/alarms"
+
+  environment       = var.environment
+  region            = var.region
+
+  application_name  = var.application_name
+  system_email      = var.system_email
+
+  metrics_namespace = module.lambda.metrics_namespace
+
+  cloudwatch_event_rule_cron_name = module.lambda.cloudwatch_event_rule_cron_name
+  lamdba_dead_letter_queue_name   = module.lambda.lamdba_dead_letter_queue_name
+
+  enable_alarms     = true
+}
+
+module "dashboard" {
+  source = "../modules/dashboard"
+
+  environment       = var.environment
+  region            = var.region
+
+  application_name  = var.application_name
+  metrics_namespace = module.lambda.metrics_namespace
+
+  cloudwatch_event_rule_cron_name = module.lambda.cloudwatch_event_rule_cron_name
+  lamdba_dead_letter_queue_name   = module.lambda.lamdba_dead_letter_queue_name
+
+  enable_dashboards = true
 }
