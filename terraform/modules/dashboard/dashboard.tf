@@ -7,7 +7,7 @@ resource "aws_cloudwatch_dashboard" "main" {
   # Although the docs say that you can use D or W when specifying "start" below, I found that only H worked
   dashboard_body = <<EOF
   {
-    "start": "-PT336H",
+    "start": "-PT672H",
     "periodOverride": "inherit",
     "widgets": [
        {
