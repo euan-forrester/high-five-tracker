@@ -59,7 +59,7 @@ data "template_file" "most_recent_high_five_age_days" {
     region            = var.region
   }
 
-  template = file("${path.module}/most_recent_high_five_age_days.tpl")
+  template = file("${path.module}/most_recent_high_five_age_days.tftpl")
 }
 
 data "template_file" "total_high_fives" {
@@ -69,7 +69,7 @@ data "template_file" "total_high_fives" {
     region            = var.region
   }
 
-  template = file("${path.module}/total_high_fives.tpl")
+  template = file("${path.module}/total_high_fives.tftpl")
 }
 
 data "template_file" "new_high_fives" {
@@ -79,7 +79,7 @@ data "template_file" "new_high_fives" {
     region            = var.region
   }
 
-  template = file("${path.module}/new_high_fives.tpl")
+  template = file("${path.module}/new_high_fives.tftpl")
 }
 
 data "template_file" "eventbridge_failed_invocations" {
@@ -88,7 +88,7 @@ data "template_file" "eventbridge_failed_invocations" {
     region            = var.region
   }
 
-  template = file("${path.module}/eventbridge_failed_invocations.tpl")
+  template = file("${path.module}/eventbridge_failed_invocations.tftpl")
 }
 
 data "template_file" "dead_letter_queue_items" {
@@ -97,5 +97,5 @@ data "template_file" "dead_letter_queue_items" {
     region            = var.region
   }
 
-  template = file("${path.module}/dead_letter_queue_items.tpl")
+  template = file("${path.module}/dead_letter_queue_items.tftpl")
 }
