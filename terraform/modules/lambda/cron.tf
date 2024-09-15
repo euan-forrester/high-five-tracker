@@ -1,6 +1,6 @@
 resource "aws_cloudwatch_event_rule" "cron" {
   name        = "${var.application_name}-cron-rule-${var.environment}"
-  is_enabled = true
+  state       = "ENABLED"
   description = "Fire our lambda expression"
   schedule_expression = var.cron_expression # Note that these need to be Quartz cron expressions, not unix cron
 }
