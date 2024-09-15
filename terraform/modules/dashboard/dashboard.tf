@@ -15,35 +15,35 @@ resource "aws_cloudwatch_dashboard" "main" {
           "y":0,
           "width":24,
           "height":6,
-          ${data.template_file.most_recent_high_five_age_days.rendered}
+          ${local.template_file_most_recent_high_five_age_days}
        },
        {
           "x":0,
           "y":6,
           "width":12,
           "height":6,
-          ${data.template_file.total_high_fives.rendered}
+          ${local.template_file_total_high_fives}
        },
        {
           "x":12,
           "y":6,
           "width":12,
           "height":6,
-          ${data.template_file.new_high_fives.rendered}
+          ${local.template_file_new_high_fives}
        },
        {
           "x":0,
           "y":6,
           "width":12,
           "height":6,
-          ${data.template_file.eventbridge_failed_invocations.rendered}
+          ${local.template_file_eventbridge_failed_invocations}
        },
        {
           "x":12,
           "y":6,
           "width":12,
           "height":6,
-          ${data.template_file.dead_letter_queue_items.rendered}
+          ${local.template_file_dead_letter_queue_items}
        }
     ]
   }
@@ -52,50 +52,32 @@ EOF
 
 }
 
-data "template_file" "most_recent_high_five_age_days" {
-  vars = {
+locals {
+  template_file_most_recent_high_five_age_days = templatefile("${path.module}/most_recent_high_five_age_days.tftpl", {
+    metrics_namespace = var.metrics_namespace
+    environment       = var.environment
+    region            = var.region   
+  })
+
+  template_file_total_high_fives = templatefile("${path.module}/total_high_fives.tftpl", {
     metrics_namespace = var.metrics_namespace
     environment       = var.environment
     region            = var.region
-  }
+  })
 
-  template = file("${path.module}/most_recent_high_five_age_days.tftpl")
-}
-
-data "template_file" "total_high_fives" {
-  vars = {
+  template_file_new_high_fives = templatefile("${path.module}/new_high_fives.tftpl", {
     metrics_namespace = var.metrics_namespace
     environment       = var.environment
     region            = var.region
-  }
+  })
 
-  template = file("${path.module}/total_high_fives.tftpl")
-}
-
-data "template_file" "new_high_fives" {
-  vars = {
-    metrics_namespace = var.metrics_namespace
-    environment       = var.environment
-    region            = var.region
-  }
-
-  template = file("${path.module}/new_high_fives.tftpl")
-}
-
-data "template_file" "eventbridge_failed_invocations" {
-  vars = {
+  template_file_eventbridge_failed_invocations = templatefile("${path.module}/eventbridge_failed_invocations.tftpl", {
     rule_name         = var.cloudwatch_event_rule_cron_name
     region            = var.region
-  }
+  })
 
-  template = file("${path.module}/eventbridge_failed_invocations.tftpl")
-}
-
-data "template_file" "dead_letter_queue_items" {
-  vars = {
+  template_file_dead_letter_queue_items = templatefile("${path.module}/dead_letter_queue_items.tftpl", {
     queue_name        = var.lamdba_dead_letter_queue_name
     region            = var.region
-  }
-
-  template = file("${path.module}/dead_letter_queue_items.tftpl")
+  })
 }
