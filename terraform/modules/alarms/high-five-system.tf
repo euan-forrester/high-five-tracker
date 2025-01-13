@@ -8,8 +8,8 @@ resource "aws_cloudwatch_metric_alarm" "most-recent-high-five-age-days" {
   namespace                 = var.metrics_namespace
   period                    = "300"
   statistic                 = "Maximum"
-  threshold                 = "30" # High Fives are uploaded to the system by hand, so even when they're fresh they're dated a week or two prior to the current date
-  treat_missing_data        = "notBreaching"
+  threshold                 = "60" # High Fives are uploaded to the system by hand, so even when they're fresh they're dated a week or two prior to the current date
+  treat_missing_data        = "ignore"
   alarm_description         = "Alerts if the High Five system is not generating new High Fives"
   alarm_actions             = [aws_sns_topic.alarms.arn]
   insufficient_data_actions = [aws_sns_topic.alarms.arn]
