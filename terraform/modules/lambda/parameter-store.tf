@@ -113,20 +113,20 @@ resource "aws_ssm_parameter" "from_email" {
   value       = var.from_email
 }
 
-resource "aws_ssm_parameter" "set_most_recent_high_five_id" {
-  name        = "/${var.application_name}/${var.environment}/set-most-recent-high-five-id"
-  description = "Whether to set the most recent High Five ID encountered during this invocation of the lambda function"
+resource "aws_ssm_parameter" "set_previously_sent_high_five_ids" {
+  name        = "/${var.application_name}/${var.environment}/set-previously-sent-high-five-ids"
+  description = "Whether to set the list of IDs for which we have previously sent an email"
   type        = "String"
-  value       = var.set_most_recent_high_five_id
+  value       = var.set_previously_sent_high_five_ids
 }
 
-# We're going to use this as external storage, to persist the most recent ID encountered between invocations of our lamdba function
+# We're going to use this as external storage, to persist the IDs of the high fives that we've previously sent emails about
 # So, ignore changes to the value of this parameter
-resource "aws_ssm_parameter" "previous_most_recent_high_five_id" {
-  name        = "/${var.application_name}/${var.environment}/previous-most-recent-high-five-id"
-  description = "The ID of the most recent High Five ID encountered on the previous run of the lambda expression"
+resource "aws_ssm_parameter" "previously_sent_high_five_ids" {
+  name        = "/${var.application_name}/${var.environment}/previously-sent-high-five-ids"
+  description = "JSON-formatted array of the IDs of the High Fives for which we have previously sent an email"
   type        = "String"
-  value       = "dummy"
+  value       = "[\"dummy\"]"
 
   lifecycle {
     ignore_changes = [
