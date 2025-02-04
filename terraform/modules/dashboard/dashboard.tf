@@ -29,7 +29,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           "y":6,
           "width":12,
           "height":6,
-          ${local.template_file_new_high_fives}
+          ${local.template_file_interesting_high_fives}
        },
        {
           "x":0,
@@ -65,7 +65,7 @@ locals {
     region            = var.region
   })
 
-  template_file_new_high_fives = templatefile("${path.module}/new_high_fives.tftpl", {
+  template_file_interesting_high_fives = templatefile("${path.module}/interesting_high_fives.tftpl", {
     metrics_namespace = var.metrics_namespace
     environment       = var.environment
     region            = var.region
