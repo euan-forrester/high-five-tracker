@@ -53,7 +53,13 @@ class ConfigHelperFile(ConfigHelper):
     def get_environment(self):
         return self.environment
 
+    def setArray(self, key, value, is_secret=False):
+        self.set(key, json.dumps(value), is_secret)
+
     def set(self, key, value, is_secret=False):
+        if len(value) > 4096:
+            raise configparser.ValueError(message=f'Length of value exceeds AWS limit of 4kB. Value: "{value}"')
+
         try:
             # This doesn't update the actual .ini file -- it must just update the in-memory store of our config.
             # It might be better to just do nothing here? Not sure
@@ -136,9 +142,15 @@ class ConfigHelperParameterStore(ConfigHelper):
 
         return value
 
+    def setArray(self, key, value, is_secret=False):
+        self.set(key, json.dumps(value), is_secret)
+
     def set(self, key, value, is_secret=False):
 
         full_path = self._get_full_path(key)
+
+        if len(value) > 4096:
+            raise configparser.ValueError(message=f'Length of value exceeds AWS limit of 4kB. Value: "{value}"')
 
         self._set_in_parameter_store(full_path, value, is_secret)
 

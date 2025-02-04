@@ -7,7 +7,7 @@ variable "region" {
 variable "application_name" {
 }
 
-variable "set_most_recent_high_five_id" {
+variable "set_previously_sent_high_five_ids" {
 }
 
 variable "send_metrics" {

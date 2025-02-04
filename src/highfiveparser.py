@@ -48,6 +48,7 @@ class HighFiveParser:
   @staticmethod
   def stringify_high_five_components(high_five):
     components = [
+      f"ID: {high_five['id']}" if high_five['id'] is not None else None,
       f"Date: {HighFiveParser.stringify_date(high_five['date'])}" if high_five['date'] is not None else None,
       f"From: {high_five['name']}" if high_five['name'] is not None else None
     ]

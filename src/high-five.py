@@ -52,7 +52,7 @@ RUN_AT_SCRIPT_STARTUP   = config_helper.getBool("run-at-script-startup")
 METRICS_NAMESPACE       = config_helper.get("metrics-namespace")
 SEND_METRICS            = config_helper.getBool("send-metrics")
 
-SET_MOST_RECENT_HIGH_FIVE_ID = config_helper.getBool("set-most-recent-high-five-id")
+SET_PREVIOUSLY_SENT_HIGH_FIVE_IDS = config_helper.getBool("set-previously-sent-high-five-ids")
 
 SEND_EMAIL              = config_helper.getBool("send-email")
 SUBJECT_LINE_SINGULAR   = config_helper.get("subject-line-singular")
@@ -187,34 +187,37 @@ def log_high_five(high_five):
 def get_new_high_fives_and_send_email(event, context):
 
   # Need to do this at the start of every request, since Lambda doesn't necessarily re-run the entire script for each invocation
-  PREVIOUS_MOST_RECENT_HIGH_FIVE_ID = config_helper.get("previous-most-recent-high-five-id")
+  PREVIOUSLY_SENT_HIGH_FIVE_IDS = config_helper.getArray("previously-sent-high-five-ids")
 
   # Request all of the high fives and filter out the ones that contain our person and community of interest
 
   all_high_fives = get_all_high_fives()
 
-  new_high_fives = list(takewhile(lambda high_five:high_five['id'] != PREVIOUS_MOST_RECENT_HIGH_FIVE_ID, all_high_fives))
+  logger.info(f"Found {len(all_high_fives)} high fives")
 
-  logger.info(f"Found {len(new_high_fives)} new high fives")
-
-  interesting_high_fives = list(filter(high_five_has_name_of_interest, new_high_fives))
+  interesting_high_fives = list(filter(high_five_has_name_of_interest, all_high_fives))
 
   logger.info(f"Found {len(interesting_high_fives)} interesting high fives")
-  for high_five in interesting_high_fives:
+
+  interesting_unsent_high_fives = list(filter(lambda high_five: not (high_five['id'] in PREVIOUSLY_SENT_HIGH_FIVE_IDS), interesting_high_fives))
+
+  logger.info(f"Found {len(interesting_unsent_high_fives)} unsent interesting high fives")
+  for high_five in interesting_unsent_high_fives:
     logger.info("\n\n")
     log_high_five(high_five)
 
   if SEND_EMAIL:
-    if len(interesting_high_fives) > 0:
-      email_high_fives(interesting_high_fives)
+    if len(interesting_unsent_high_fives) > 0:
+      email_high_fives(interesting_unsent_high_fives)
     else:
-      logger.info("No interesting high fives found, so not sending email")
+      logger.info("No unsent interesting high fives found, so not sending email")
 
-  calculate_metrics(all_high_fives, new_high_fives)
+  calculate_metrics(all_high_fives, interesting_unsent_high_fives)
 
   # Be sure to do this last, so that if we have an error earlier (e.g. sending the email) then we won't miss sending out a High Five in a subsequent run
-  if SET_MOST_RECENT_HIGH_FIVE_ID and (len(all_high_fives) > 0):
-    config_helper.set("previous-most-recent-high-five-id", all_high_fives[0]['id'])
+  if SET_PREVIOUSLY_SENT_HIGH_FIVE_IDS and (len(all_high_fives) > 0):
+    interesting_high_five_ids = list(map(lambda high_five:high_five['id'], interesting_high_fives))
+    config_helper.setArray("previously-sent-high-five-ids", interesting_high_five_ids)
 
 if RUN_AT_SCRIPT_STARTUP:
   get_new_high_fives_and_send_email(None, None)

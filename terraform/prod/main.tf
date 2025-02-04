@@ -9,7 +9,7 @@ module "lambda" {
 
   cron_expression         = "cron(0 16 * * ? *)"  # Run every day at 4:00 PM UTC = 9:00 AM PDT or 8:00 AM PST
 
-  set_most_recent_high_five_id = true
+  set_previously_sent_high_five_ids = true
 
   metrics_namespace       = var.application_name
   send_metrics            = true
