@@ -41,14 +41,14 @@ Note that you need to create & populate `~/.aws/credentials`. There is an exampl
 Log into your docker repository:
 
 ```
-eval "$(aws ecr get-login --no-include-email --region us-west-2)"
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin <aws account id>.dkr.ecr.us-west-2.amazonaws.com
 ```
 
 Then build and push your image:
 
 ```
 cd src
-docker build -f ./Dockerfile .
+docker build -t high-five-tracker-[dev|prod] . --provenance=false
 docker images
 docker tag <ID of image you just built> <URI of high-five-tracker-[dev|prod] repository in ECR: use AWS console to find>
 docker push <URI of high-five-tracker-[dev|prod] repository in ECR>
