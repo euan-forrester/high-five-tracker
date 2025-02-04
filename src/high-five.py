@@ -86,7 +86,7 @@ def high_five_has_name_of_interest(high_five):
 
       for community_name in high_five['communities']:
         if community_name.lower() in COMMUNITIES_OF_INTEREST_LOWERCASE:
-          logger.info(f"Found {name} in {community_name}")
+          logger.info(f"Found {name} in {community_name} in High Five ID {high_five['id']}")
           community_matches = True
           break
 
@@ -153,13 +153,17 @@ def email_high_fives(high_fives):
 
   email_helper.send_email(FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS, CC_EMAIL_ADDRESS, subject_line, body_text)
 
-def calculate_metrics(all_high_fives, new_high_fives):
+def calculate_metrics(all_high_fives, interesting_high_fives):
   logger.info("*** Metrics information ***")
   num_high_fives_found = len(all_high_fives)
-  num_new_high_fives_found = len(new_high_fives)
+  num_interesting_high_fives_found = len(interesting_high_fives)
 
   logger.info(f"Found {num_high_fives_found} total High Fives")
-  logger.info(f"Found {num_new_high_fives_found} new High Fives")
+  logger.info(f"Found {num_interesting_high_fives_found} interesting High Fives")
+
+  if SEND_METRICS:
+    metrics_helper.send_count("total-high-fives", num_high_fives_found)
+    metrics_helper.send_count("interesting-high-fives", num_interesting_high_fives_found)
 
   if num_high_fives_found == 0:
     logger.info("No high fives found, so no further telemetry can be sent")
@@ -174,9 +178,7 @@ def calculate_metrics(all_high_fives, new_high_fives):
     logger.info(f"Most recent High Five found is {most_recent_high_five_age_days} days old")
 
   if SEND_METRICS:
-    metrics_helper.send_count("total-high-fives", num_high_fives_found)
     metrics_helper.send_count("most-recent-high-five-age-days", most_recent_high_five_age_days)
-    metrics_helper.send_count("new-high-fives", num_new_high_fives_found)
 
 def log_high_five(high_five):
   high_five_components = HighFiveParser.stringify_high_five_components(high_five)
@@ -208,11 +210,11 @@ def get_new_high_fives_and_send_email(event, context):
 
   if SEND_EMAIL:
     if len(interesting_unsent_high_fives) > 0:
-      email_high_fives(interesting_unsent_high_fives)
+      email_high_fives(interesting_high_fives)
     else:
       logger.info("No unsent interesting high fives found, so not sending email")
 
-  calculate_metrics(all_high_fives, interesting_unsent_high_fives)
+  calculate_metrics(all_high_fives, interesting_high_fives)
 
   # Be sure to do this last, so that if we have an error earlier (e.g. sending the email) then we won't miss sending out a High Five in a subsequent run
   if SET_PREVIOUSLY_SENT_HIGH_FIVE_IDS and (len(all_high_fives) > 0):

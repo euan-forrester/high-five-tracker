@@ -26,7 +26,7 @@ module "lambda" {
 
   base_url                = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&o=HighFiveDate,Descending&site=null"
 
-  batch_size              = 1000
+  batch_size              = 2000
   num_retries             = 3
   retry_backoff_factor    = 0.5
 }
