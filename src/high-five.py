@@ -210,7 +210,7 @@ def get_new_high_fives_and_send_email(event, context):
 
   if SEND_EMAIL:
     if len(interesting_unsent_high_fives) > 0:
-      email_high_fives(interesting_high_fives)
+      email_high_fives(interesting_unsent_high_fives)
     else:
       logger.info("No unsent interesting high fives found, so not sending email")
 
