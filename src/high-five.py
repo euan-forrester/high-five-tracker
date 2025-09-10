@@ -124,7 +124,7 @@ def get_all_high_fives():
     response = session.get(url)
 
     if response.status_code != 200:
-      logger.error(f"Received status code {response.status_code} after {REQUEST_RETRIES} attempts from URL '{url}'")
+      logger.error(f"Received status code {response.status_code} after {NUM_RETRIES} attempts from URL '{url}'")
       sys.exit(-1)
 
     response_data = json.loads(response.text)
