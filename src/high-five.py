@@ -75,6 +75,11 @@ metrics_helper = MetricsHelper(environment=config_helper.get_environment(), regi
 # Helper functions
 #
 
+def graceful_exit(exit_code):
+  logger.handlers[0].flush()
+  logging.shutdown()
+  sys.exit(exit_code)
+
 def high_five_has_name_of_interest(high_five):
   for name in NAMES_OF_INTEREST_LOWERCASE:
     if name in high_five['message'].lower():
@@ -125,7 +130,7 @@ def get_all_high_fives():
 
     if response.status_code != 200:
       logger.error(f"Received status code {response.status_code} after {NUM_RETRIES} attempts from URL '{url}'")
-      sys.exit(-1)
+      graceful_exit(-1)
 
     response_data = json.loads(response.text)
 
