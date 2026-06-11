@@ -24,6 +24,7 @@ module "lambda" {
   communities_of_interest = var.communities_of_interest
 
   base_url                = "https://www.fraserhealth.ca//sxa/search/results/?l=en&s={8A83A1F3-652A-4C01-B247-A2849DDE6C73}&sig=&defaultSortOrder=HighFiveDate,Descending&.ZFZ0zOzMLUY=null&v={C0113845-0CB6-40ED-83E4-FF43CF735D67}&o=HighFiveDate,Descending&site=null"
+  user_agent              = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:151.0) Gecko/20100101 Firefox/151.0"
 
   batch_size              = 2000
   num_retries             = 3

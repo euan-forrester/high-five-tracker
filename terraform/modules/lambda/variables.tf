@@ -43,6 +43,9 @@ variable "communities_of_interest" {
 variable "base_url" {
 }
 
+variable "user_agent" {
+}
+
 variable "batch_size" {
 }
 

@@ -40,6 +40,7 @@ config_helper = ConfigHelper.get_config_helper(default_env_name="dev", applicati
 AWS_REGION              = config_helper.get("aws-region")
 
 BASE_URL                = config_helper.get("base-url")
+USER_AGENT              = config_helper.get("user-agent")
 BATCH_SIZE              = config_helper.getInt("batch-size")
 NUM_RETRIES             = config_helper.getInt("num-retries")
 RETRY_BACKOFF_FACTOR    = config_helper.getFloat("retry-backoff-factor")
@@ -103,6 +104,10 @@ def get_all_high_fives():
   retries = Retry(total=NUM_RETRIES, backoff_factor=RETRY_BACKOFF_FACTOR)
   adapter = HTTPAdapter(max_retries=retries)
 
+  headers = {
+    'User-Agent': USER_AGENT
+  }
+
   session = requests.Session()
   session.mount("https://", adapter)
 
@@ -126,7 +131,7 @@ def get_all_high_fives():
     # e is the offset
     url = BASE_URL + f"&p={BATCH_SIZE}&e={current_offset}"
 
-    response = session.get(url)
+    response = session.get(url, headers=headers)
 
     if response.status_code != 200:
       logger.error(f"Received status code {response.status_code} after {NUM_RETRIES} attempts from URL '{url}'")
